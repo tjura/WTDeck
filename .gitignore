@@ -1,0 +1,29 @@
+## .NET
+bin/
+obj/
+*.user
+*.suo
+*.cache
+*.vs/
+*.DotSettings.user
+publish/
+tmp/
+
+## Node
+node_modules/
+dist/
+*.tgz
+
+## IDE
+.idea/
+.vscode/
+*.swp
+*.swo
+
+## OS
+Thumbs.db
+Desktop.ini
+.DS_Store
+
+## Build output
+*.streamDeckPlugin

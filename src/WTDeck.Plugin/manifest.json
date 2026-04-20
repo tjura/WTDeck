@@ -1,0 +1,43 @@
+{
+  "Name": "WTDeck",
+  "Author": "WTDeck",
+  "Version": "1.0.0",
+  "SDKVersion": 1,
+  "Description": "War Thunder companion for Stream Controller. Dynamic landing gear status with color indicators and keyboard input forwarding.",
+  "Category": "WTDeck",
+  "CategoryIcon": "assets/category-icon",
+  "Icon": "assets/plugin-icon",
+  "CodePath": "plugin/index.html",
+  "CodePathWin": "plugin/index.html",
+  "OS": [
+    {
+      "Platform": "windows",
+      "MinimumVersion": "10"
+    }
+  ],
+  "Software": {
+    "MinimumVersion": "2.9"
+  },
+  "Actions": [
+    {
+      "UUID": "com.wtdeck.streamdock.gear",
+      "Name": "Landing Gear",
+      "Tooltip": "Shows landing gear state and toggles it in War Thunder",
+      "Icon": "assets/gear-disabled",
+      "PropertyInspectorPath": "plugin/property-inspector.html",
+      "Controllers": ["Keypad"],
+      "States": [
+        {
+          "Image": "assets/gear-disabled",
+          "Name": "State",
+          "Title": "LANDING\nGEAR",
+          "ShowTitle": false,
+          "TitleAlignment": "middle",
+          "FontSize": "14"
+        }
+      ],
+      "SupportedInMultiActions": false,
+      "UserTitleEnabled": false
+    }
+  ]
+}
