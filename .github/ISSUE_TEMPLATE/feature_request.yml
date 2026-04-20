@@ -1,0 +1,46 @@
+name: Feature request
+description: Suggest an improvement that fits WTDeck's current direction.
+title: "[Feature]: "
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Thanks for the idea.
+
+        WTDeck is still pre-1.0, so the most useful requests are focused, concrete, and aligned with the current Windows + Stream Controller scope.
+  - type: textarea
+    id: problem
+    attributes:
+      label: Problem or use case
+      description: What are you trying to accomplish?
+    validations:
+      required: true
+  - type: textarea
+    id: proposal
+    attributes:
+      label: Proposed solution
+      description: What should WTDeck do?
+    validations:
+      required: true
+  - type: textarea
+    id: alternatives
+    attributes:
+      label: Alternatives considered
+      description: Workarounds, competing ideas, or why the current behavior is not enough.
+  - type: dropdown
+    id: area
+    attributes:
+      label: Primary area
+      options:
+        - Telemetry
+        - Stream Controller plugin
+        - Input / key bindings
+        - App UX
+        - Packaging / installation
+        - Documentation
+    validations:
+      required: true
+  - type: textarea
+    id: additional_context
+    attributes:
+      label: Additional context

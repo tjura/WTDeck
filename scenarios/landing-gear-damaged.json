@@ -1,0 +1,72 @@
+{
+  "name": "landing-gear-damaged",
+  "stepIntervalMs": 100,
+  "steps": [
+    {
+      "name": "transitioning",
+      "indicators": {
+        "valid": true,
+        "type": "a_4n",
+        "army": "air",
+        "gears": 0,
+        "gears_lamp": 1
+      },
+      "state": {
+        "valid": true,
+        "IAS, km/h": 240,
+        "gear, %": 60
+      },
+      "expectTelemetry": {
+        "available": true,
+        "valid": true,
+        "aircraftType": "a_4n",
+        "gearPercent": 60,
+        "gear": 0.6,
+        "gearsCommand": 0,
+        "gearsLamp": 1,
+        "indicatedAirspeedKmh": 240
+      },
+      "expectUi": {
+        "actionKey": "landing-gear",
+        "title": "OPENING",
+        "statusKey": "extending",
+        "isBlinking": true,
+        "isEnabled": true,
+        "alertLevel": "Info"
+      }
+    },
+    {
+      "name": "stuck-mid-position",
+      "indicators": {
+        "valid": true,
+        "type": "a_4n",
+        "army": "air",
+        "gears": 0,
+        "gears_lamp": 1
+      },
+      "state": {
+        "valid": true,
+        "IAS, km/h": 240,
+        "gear, %": 60
+      },
+      "expectTelemetry": {
+        "available": true,
+        "valid": true,
+        "aircraftType": "a_4n",
+        "gearPercent": 60,
+        "gear": 0.6,
+        "gearsCommand": 0,
+        "gearsLamp": 1,
+        "indicatedAirspeedKmh": 240
+      },
+      "expectUi": {
+        "actionKey": "landing-gear",
+        "title": "DAMAGED",
+        "statusKey": "danger",
+        "isBlinking": true,
+        "isEnabled": true,
+        "alertLevel": "Danger"
+      }
+    }
+  ]
+}

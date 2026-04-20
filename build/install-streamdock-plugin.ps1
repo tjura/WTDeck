@@ -1,5 +1,5 @@
 #!/usr/bin/env pwsh
-# Dev helper: installs the WTDeck plugin + profile directly to the StreamDock
+# Dev helper: installs the WTDeck plugin + profile directly to the Stream Controller
 # user data directory, without running WTDeck.App.exe.
 # Useful for fast iteration on plugin-only changes.
 

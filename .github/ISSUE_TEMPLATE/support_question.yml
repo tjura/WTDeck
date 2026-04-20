@@ -1,0 +1,31 @@
+name: Support question
+description: Ask for help with setup or behavior in the current development version.
+title: "[Support]: "
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Please check README.md, docs/configuration.md, and docs/troubleshooting.md first.
+
+        For security issues, do not use this form. Follow SECURITY.md instead.
+  - type: input
+    id: environment
+    attributes:
+      label: Environment
+      placeholder: Windows version, Stream Controller version, War Thunder status
+    validations:
+      required: true
+  - type: textarea
+    id: question
+    attributes:
+      label: What do you need help with?
+    validations:
+      required: true
+  - type: textarea
+    id: what_you_tried
+    attributes:
+      label: What have you already tried?
+  - type: textarea
+    id: context
+    attributes:
+      label: Logs, screenshots, or extra context

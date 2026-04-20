@@ -1,0 +1,76 @@
+name: Bug report
+description: Report a reproducible defect in the current development version of WTDeck.
+title: "[Bug]: "
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Thanks for reporting a bug.
+
+        WTDeck is still experimental. Please include enough detail for someone else to reproduce the problem.
+  - type: dropdown
+    id: component
+    attributes:
+      label: Affected component
+      options:
+        - WTDeck.App
+        - WTDeck.Plugin
+        - WTDeck.StreamDock sync
+        - Telemetry
+        - Input.Windows
+        - IPC / local API
+        - Build or packaging
+        - Documentation
+    validations:
+      required: true
+  - type: input
+    id: wtdeck_version
+    attributes:
+      label: WTDeck commit, branch, or version
+      placeholder: main at abc1234, local branch name, or a packaged build version
+    validations:
+      required: true
+  - type: input
+    id: windows_version
+    attributes:
+      label: Windows version
+      placeholder: Windows 11 24H2
+    validations:
+      required: true
+  - type: input
+    id: stream_controller_version
+    attributes:
+      label: Stream Controller version
+      placeholder: 2.9.x
+  - type: input
+    id: war_thunder_version
+    attributes:
+      label: War Thunder version or branch
+      placeholder: live, dev server, or unknown
+  - type: textarea
+    id: steps
+    attributes:
+      label: Steps to reproduce
+      placeholder: |
+        1. Start WTDeck.App
+        2. Open Stream Controller
+        3. ...
+    validations:
+      required: true
+  - type: textarea
+    id: expected
+    attributes:
+      label: Expected behavior
+    validations:
+      required: true
+  - type: textarea
+    id: actual
+    attributes:
+      label: Actual behavior
+    validations:
+      required: true
+  - type: textarea
+    id: logs
+    attributes:
+      label: Logs, screenshots, or additional context
+      description: Do not include secrets or private vulnerability details here.

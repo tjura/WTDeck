@@ -20,7 +20,6 @@ public sealed class AppHost : BackgroundService
     private readonly IPluginBridge _pluginBridge;
     private readonly IKeyBindingProvider _keyBindingProvider;
     private readonly IKeyboardSender _keyboardSender;
-    private readonly ISoundAlert _soundAlert;
     private readonly IAlertCenter _alertCenter;
     private readonly IPluginSyncService _pluginSyncService;
     private readonly TimeProvider _clock;
@@ -39,7 +38,6 @@ public sealed class AppHost : BackgroundService
         IPluginBridge pluginBridge,
         IKeyBindingProvider keyBindingProvider,
         IKeyboardSender keyboardSender,
-        ISoundAlert soundAlert,
         IAlertCenter alertCenter,
         IPluginSyncService pluginSyncService,
         TimeProvider clock,
@@ -50,7 +48,6 @@ public sealed class AppHost : BackgroundService
         _pluginBridge = pluginBridge;
         _keyBindingProvider = keyBindingProvider;
         _keyboardSender = keyboardSender;
-        _soundAlert = soundAlert;
         _alertCenter = alertCenter;
         _pluginSyncService = pluginSyncService;
         _clock = clock;
@@ -80,7 +77,6 @@ public sealed class AppHost : BackgroundService
         }
         finally
         {
-            _soundAlert.Stop();
             _telemetryPoller.StateChanged -= OnTelemetryStateChanged;
             _pluginBridge.ButtonPressed -= OnButtonPressed;
             _telemetryUpdates.Complete();
@@ -144,14 +140,6 @@ public sealed class AppHost : BackgroundService
                 _previousSnapshot = snapshot;
                 _lastSnapshot = snapshot;
             }
-
-            // Sound policy: tone plays if and only if at least one alert is Active.
-            // Acknowledged alerts silence the tone even though they still show red.
-            var anyActive = result.AlertsSnapshot.Any(a => a.Status == AlertStatus.Active);
-            if (anyActive)
-                _soundAlert.PlayDangerTone();
-            else
-                _soundAlert.Stop();
 
             foreach (var buttonState in result.ButtonStates)
             {

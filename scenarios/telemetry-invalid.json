@@ -1,0 +1,39 @@
+{
+  "name": "telemetry-invalid",
+  "stepIntervalMs": 100,
+  "steps": [
+    {
+      "name": "invalid-snapshot",
+      "indicators": {
+        "valid": false,
+        "type": "a_4n",
+        "army": "air",
+        "gears": 1,
+        "gears_lamp": 0
+      },
+      "state": {
+        "valid": false,
+        "IAS, km/h": 220,
+        "gear, %": 100
+      },
+      "expectTelemetry": {
+        "available": true,
+        "valid": false,
+        "aircraftType": "a_4n",
+        "gearPercent": 100,
+        "gear": 1,
+        "gearsCommand": 1,
+        "gearsLamp": 0,
+        "indicatedAirspeedKmh": 220
+      },
+      "expectUi": {
+        "actionKey": "landing-gear",
+        "title": "NO GEAR",
+        "statusKey": "unavailable",
+        "isBlinking": false,
+        "isEnabled": false,
+        "alertLevel": "None"
+      }
+    }
+  ]
+}

@@ -1,0 +1,152 @@
+{
+  "name": "landing-gear-cycle",
+  "stepIntervalMs": 100,
+  "steps": [
+    {
+      "name": "gear-up",
+      "indicators": {
+        "valid": true,
+        "type": "a_4n",
+        "army": "air",
+        "gears": 0,
+        "gears_lamp": 0
+      },
+      "state": {
+        "valid": true,
+        "IAS, km/h": 300,
+        "gear, %": 0
+      },
+      "expectTelemetry": {
+        "available": true,
+        "valid": true,
+        "aircraftType": "a_4n",
+        "gearPercent": 0,
+        "gear": 0,
+        "gearsCommand": 0,
+        "gearsLamp": 0,
+        "indicatedAirspeedKmh": 300
+      },
+      "expectUi": {
+        "actionKey": "landing-gear",
+        "title": "GEAR UP",
+        "statusKey": "up",
+        "isBlinking": false,
+        "isEnabled": true,
+        "alertLevel": "None"
+      }
+    },
+    {
+      "name": "gear-opening",
+      "indicators": {
+        "valid": true,
+        "type": "a_4n",
+        "army": "air",
+        "gears": 1,
+        "gears_lamp": 0
+      },
+      "state": {
+        "valid": true,
+        "IAS, km/h": 260,
+        "gear, %": 50
+      },
+      "expectTelemetry": {
+        "available": true,
+        "valid": true,
+        "aircraftType": "a_4n",
+        "gearPercent": 50,
+        "gear": 0.5,
+        "gearsCommand": 1,
+        "gearsLamp": 0,
+        "indicatedAirspeedKmh": 260
+      },
+      "expectUi": {
+        "actionKey": "landing-gear",
+        "title": "OPENING",
+        "statusKey": "extending",
+        "isBlinking": true,
+        "isEnabled": true,
+        "alertLevel": "Info"
+      }
+    },
+    {
+      "name": "gear-down",
+      "indicators": {
+        "valid": true,
+        "type": "a_4n",
+        "army": "air",
+        "gears": 1,
+        "gears_lamp": 0
+      },
+      "state": {
+        "valid": true,
+        "IAS, km/h": 240,
+        "gear, %": 100
+      },
+      "expectTelemetry": {
+        "available": true,
+        "valid": true,
+        "aircraftType": "a_4n",
+        "gearPercent": 100,
+        "gear": 1,
+        "gearsCommand": 1,
+        "gearsLamp": 0,
+        "indicatedAirspeedKmh": 240
+      },
+      "expectUi": {
+        "actionKey": "landing-gear",
+        "title": "GEAR DOWN",
+        "statusKey": "down",
+        "isBlinking": true,
+        "isEnabled": true,
+        "alertLevel": "Info"
+      }
+    },
+    {
+      "name": "overspeed-alert",
+      "indicators": {
+        "valid": true,
+        "type": "a_4n",
+        "army": "air",
+        "gears": 1,
+        "gears_lamp": 0
+      },
+      "state": {
+        "valid": true,
+        "IAS, km/h": 500,
+        "gear, %": 100
+      },
+      "expectTelemetry": {
+        "available": true,
+        "valid": true,
+        "aircraftType": "a_4n",
+        "gearPercent": 100,
+        "gear": 1,
+        "gearsCommand": 1,
+        "gearsLamp": 0,
+        "indicatedAirspeedKmh": 500
+      },
+      "expectUi": {
+        "actionKey": "landing-gear",
+        "title": "GEAR > 450 KM/H",
+        "statusKey": "danger",
+        "isBlinking": true,
+        "isEnabled": true,
+        "alertLevel": "Danger"
+      },
+      "commands": [
+        {
+          "actionKey": "landing-gear",
+          "expectedScanCodes": [34],
+          "expectedUi": {
+            "actionKey": "landing-gear",
+            "title": "GEAR > 450 KM/H",
+            "statusKey": "danger",
+            "isBlinking": false,
+            "isEnabled": true,
+            "alertLevel": "Danger"
+          }
+        }
+      ]
+    }
+  ]
+}

@@ -1,5 +1,5 @@
 #!/usr/bin/env pwsh
-# Packages the WTDeck StreamDock plugin as a .sdPlugin directory.
+# Packages the WTDeck Stream Controller plugin as a .sdPlugin directory.
 # The sync service inside WTDeck.App also installs the plugin at runtime;
 # this script is for manual packaging/distribution.
 
@@ -10,7 +10,7 @@ $outputDir = Join-Path $root "publish"
 $pluginUuid = "com.wtdeck.streamdock"
 $packageDir = Join-Path $outputDir "$pluginUuid.sdPlugin"
 
-Write-Host "Packaging WTDeck StreamDock plugin..." -ForegroundColor Cyan
+Write-Host "Packaging WTDeck Stream Controller plugin..." -ForegroundColor Cyan
 
 # Validate source
 $manifestPath = Join-Path $pluginSrc "manifest.json"

@@ -10,7 +10,7 @@
     "HttpTimeoutMs": 2000
   },
   "Ipc": {
-    "Port": 3030,
+    "Port": 8730,
     "BindAddress": "127.0.0.1"
   },
   "StreamDock": {
@@ -20,9 +20,6 @@
     "DeviceModel": "20GBA9901",
     "ProfileName": "WTDeck",
     "PluginUuid": "com.wtdeck.streamdock"
-  },
-  "Sound": {
-    "Enabled": true
   }
 }
 ```
@@ -35,7 +32,7 @@
 - `HttpTimeoutMs`: timeout per HTTP call
 
 ### Ipc
-- `Port`: loopback HTTP port the plugin connects to (default: 3030)
+- `Port`: loopback HTTP port the plugin connects to (default: 8730)
 - `BindAddress`: must stay on `127.0.0.1` to avoid firewall/UAC issues
 
 ### StreamDock
@@ -43,9 +40,6 @@
 - `DeviceUUID` / `DeviceSerialNumber` / `DeviceModel`: target device identifiers (must match your physical device)
 - `ProfileName`: the dedicated profile name. Does not overwrite your existing profiles.
 - `PluginUuid`: the plugin package UUID (installed at `%APPDATA%\HotSpot\StreamDock\plugins\{uuid}.sdPlugin\`)
-
-### Sound
-- `Enabled`: play synthetic danger tone when gear is damaged
 
 ## Auto-Detection
 

@@ -33,7 +33,7 @@ public class IpcMessageSerializationTests
     [Fact]
     public void HandshakeMessage_round_trips_through_json()
     {
-        var original = new HandshakeMessage(1, "1.0.0");
+        var original = new HandshakeMessage(1, "0.1.0");
         var json = JsonSerializer.Serialize(original, Options);
         var deserialized = JsonSerializer.Deserialize<HandshakeMessage>(json, Options);
         deserialized.Should().Be(original);

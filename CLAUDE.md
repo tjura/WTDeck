@@ -1,4 +1,4 @@
-# AGENTS.md
+# CLAUDE.md
 
 This file gives mandatory instructions to AI coding agents and human contributors working in this repository.
 
@@ -113,7 +113,7 @@ Any non-trivial change must include tests in the most relevant layer.
 - rule engine -> `tests/WTDeck.Core.Tests`
 - IPC protocol -> `tests/WTDeck.Ipc.Tests`
 - app integration -> `tests/WTDeck.App.IntegrationTests`
-- plugin transport/render behavior -> `tests/WTDeck.Plugin.Tests`
+- plugin packaging/profile sync -> `tests/WTDeck.StreamDock.Tests`
 
 ### What must be tested
 
@@ -167,13 +167,11 @@ dotnet format --verify-no-changes
 ```
 
 #### Plugin
+The Stream Controller plugin is currently plain HTML/JavaScript without a
+separate npm pipeline. Validate it through:
+
 ```bash
-cd src/WTDeck.Plugin
-npm ci
-npm run lint
-npm run typecheck
-npm run test
-npm run build
+pwsh ./build/validate-quality.ps1
 ```
 
 #### Full validation
@@ -201,11 +199,10 @@ If any command fails, the work is not done.
 - when catching, log context and either recover intentionally or rethrow
 - prefer options validation for configuration
 
-### TypeScript
-- `strict: true`
-- avoid `any`
-- do runtime validation on external inputs
-- keep plugin event handlers small
+### Plugin JavaScript
+- keep the plugin transport-focused and intentionally small
+- validate external inputs defensively
+- keep event handlers small and easy to reason about
 - avoid mixing SDK callbacks with domain calculations
 
 ## Forbidden shortcuts
@@ -286,10 +283,8 @@ CI should fail on:
 
 - build warnings treated as errors
 - failed .NET tests
-- failed plugin tests
+- failed plugin validation checks
 - formatting violations
-- lint violations
-- typecheck failures
 
 Do not mark work complete if it only builds locally in one subproject.
 

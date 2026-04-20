@@ -1,9 +1,9 @@
 {
   "Name": "WTDeck",
-  "Author": "WTDeck",
-  "Version": "1.0.0",
+  "Author": "Tomasz Jura",
+  "Version": "0.1.0",
   "SDKVersion": 1,
-  "Description": "War Thunder companion for Stream Controller. Dynamic landing gear status with color indicators and keyboard input forwarding.",
+  "Description": "Experimental War Thunder companion for Stream Controller. Dynamic landing gear status with color indicators and keyboard input forwarding.",
   "Category": "WTDeck",
   "CategoryIcon": "assets/category-icon",
   "Icon": "assets/plugin-icon",

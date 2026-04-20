@@ -2,7 +2,7 @@
 
 ## Transport
 
-- **HTTP REST API** on `http://127.0.0.1:3030` (loopback only)
+- **HTTP REST API** on `http://127.0.0.1:8730` (loopback only)
 - Plugin polls the app for state; app exposes endpoints for commands and heartbeats
 - Current protocol version: **2**
 
@@ -16,7 +16,7 @@ Returns the current button state snapshot. Called by the plugin every 500ms.
 ```json
 {
   "protocolVersion": 2,
-  "appVersion": "1.0.0",
+  "appVersion": "0.1.0",
   "timestamp": "2026-04-04T12:00:00Z",
   "state": {
     "gearStatus": "down",
@@ -74,7 +74,7 @@ Diagnostic endpoint.
 
 ## Plugin Framing
 
-The StreamDock plugin (`plugin/index.js`) uses the StreamDock WebSocket SDK for button rendering (`setTitle`, `setImage`) and `fetch()` against this HTTP API for state sync and action triggering. No custom framing - it's a regular HTTP client speaking JSON over loopback.
+The Stream Controller plugin (`plugin/index.js`) uses the Stream Controller WebSocket SDK for button rendering (`setTitle`, `setImage`) and `fetch()` against this HTTP API for state sync and action triggering. No custom framing - it's a regular HTTP client speaking JSON over loopback.
 
 ## Versioning
 

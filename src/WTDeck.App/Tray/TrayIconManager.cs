@@ -19,7 +19,7 @@ public sealed class TrayIconManager : IDisposable
     {
         _notifyIcon = new NotifyIcon
         {
-            Text = "WTDeck - War Thunder Stream Deck",
+            Text = "WTDeck - War Thunder Stream Controller",
             Visible = true,
             ContextMenuStrip = CreateMenu()
         };

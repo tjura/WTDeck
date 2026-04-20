@@ -13,7 +13,7 @@ public class StreamDockStateSnapshotSerializationTests
         var state = new StreamDockState("down", "GEAR DOWN", true, "Info");
         var original = new StreamDockStateSnapshot(
             ProtocolVersion: 2,
-            AppVersion: "1.0.0",
+            AppVersion: "0.1.0",
             Timestamp: DateTimeOffset.UtcNow,
             State: state);
 
@@ -33,7 +33,7 @@ public class StreamDockStateSnapshotSerializationTests
         var json = """
             {
               "protocolVersion": 2,
-              "appVersion": "1.0.0",
+              "appVersion": "0.1.0",
               "timestamp": "2026-04-04T12:00:00Z",
               "state": {
                 "gearStatus": "up",

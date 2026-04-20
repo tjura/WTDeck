@@ -1,440 +1,159 @@
 # WTDeck
 
-WTDeck is a Windows-native companion app plus a thin Stream Deck plugin for War Thunder.
+WTDeck is an experimental Windows companion app and Stream Controller plugin for War Thunder.
 
-## Product summary
+> Status: experimental, pre-1.0, and not yet a stable release.
+> Expect breaking changes, incomplete features, and rough edges while the project is still taking shape.
 
-WTDeck should let the user:
+WTDeck is an unofficial community project. It is not affiliated with, endorsed by, or sponsored by Gaijin Entertainment, War Thunder, HotSpot, or Stream Controller. Product names, logos, and trademarks belong to their respective owners.
 
-- click one Windows executable before starting the game
-- read War Thunder telemetry continuously
-- map telemetry to dynamic Stream Deck button states
-- forward Stream Deck button presses to the game as keyboard input
-- install the Stream Deck plugin from inside the app with a single button
+## What WTDeck does today
 
-The target user experience is:
+- reads War Thunder telemetry from the local HTTP telemetry endpoints
+- maps telemetry into dynamic landing gear button states
+- forwards button presses from Stream Controller to the game as keyboard input
+- installs and syncs the local plugin/profile assets needed by the app
 
-1. Install WTDeck.
-2. Click **Install Plugin** once.
-3. Before playing, start `WTDeck.exe`.
-4. Start War Thunder.
-5. Use Stream Deck normally.
+The current implementation is focused on an initial vertical slice around landing gear state, Stream Controller integration, and Windows input delivery.
 
-## Recommended architecture
+## Project status
 
-This repository should implement a **single Windows desktop executable** for business logic and a **thin Stream Deck plugin package** for device integration.
+WTDeck is in active development.
 
-### Components
+- There is no stable release yet.
+- There is no published installer yet.
+- The public API and on-disk configuration may still change.
+- CI is not configured yet, so contributors must run validation locally.
 
-#### 1. WTDeck.App
-Windows desktop application, ideally WinUI 3 on .NET 8.
+If you want a polished end-user product, this repository is not there yet. If you want to help shape the project early, this is the right time to get involved.
 
-Responsibilities:
+## Platform and prerequisites
 
-- app lifecycle and tray behavior
-- settings UI
-- one-click plugin installation
-- telemetry acquisition
-- telemetry parsing
-- rule engine
-- Stream Deck bridge server
-- keyboard input sending through a dedicated adapter
-- diagnostics, logs, and health checks
+Current target environment:
 
-This should be the only process the user launches manually.
+- Windows 10 or later
+- .NET 8 SDK for building from source
+- War Thunder with telemetry available on `http://localhost:8111`
+- Stream Controller 2.9 or later
 
-#### 2. WTDeck.Plugin
-Thin Stream Deck plugin.
+## Quick start
 
-Responsibilities:
+There is no packaged public release yet. The current path is source-first:
 
-- receive button events from Stream Deck
-- display button title, image, and state
-- forward button clicks to `WTDeck.App`
-- render current status coming from `WTDeck.App`
+```powershell
+dotnet restore
+dotnet build -c Release -warnaserror
+dotnet run --project .\src\WTDeck.App\WTDeck.App.csproj -c Release
+```
 
-This plugin should stay intentionally small. It should not own domain logic.
+Typical usage flow:
 
-#### 3. Shared contracts
-Shared DTOs and message contracts between the app and plugin.
+1. Build and launch `WTDeck.App`.
+2. Let the app sync the local Stream Controller plugin/profile assets.
+3. Start War Thunder.
+4. Use the WTDeck button in Stream Controller.
 
-Responsibilities:
+For architecture and protocol details, see:
 
-- message schema versioning
-- command/event payload types
-- button identifiers
-- action identifiers
-- diagnostics payloads
+- [Architecture](docs/architecture.md)
+- [Configuration](docs/configuration.md)
+- [Protocol](docs/protocol.md)
+- [Testing](docs/testing.md)
+- [Troubleshooting](docs/troubleshooting.md)
 
-## Why this architecture
+## Development
 
-This split gives the best balance of:
-
-- native Windows behavior
-- clean ownership boundaries
-- testability
-- simpler debugging
-- easier single-exe distribution for the main app
-- simpler Stream Deck plugin maintenance
-
-## Technical stack
-
-### Windows app
-- .NET 8
-- WinUI 3
-- Microsoft.Extensions.Hosting
-- Microsoft.Extensions.DependencyInjection
-- Microsoft.Extensions.Logging
-- JSON configuration
-- Named Pipes for local IPC
-- Win32 `SendInput` via a single input adapter layer
-
-### Stream Deck plugin
-- TypeScript
-- official Stream Deck SDK
-- minimal rendering and event forwarding only
-
-### Tests
-- xUnit for .NET unit and integration tests
-- Vitest or Jest for plugin-side tests
-- ESLint + TypeScript strict mode
-- `dotnet format` and Roslyn analyzers for .NET quality checks
-
-## Repository layout
+### Repository layout
 
 ```text
 WTDeck/
 |- src/
-|  |- WTDeck.App/                # WinUI 3 desktop app
-|  |- WTDeck.Core/               # domain logic, contracts, rules
-|  |- WTDeck.Telemetry/          # telemetry sources and parsers
-|  |- WTDeck.Input.Windows/      # SendInput adapter only
-|  |- WTDeck.Ipc/                # named pipe transport and message handlers
-|  `- WTDeck.Plugin/             # Stream Deck plugin (TypeScript)
+|  |- WTDeck.App/                # Windows host, tray app, DI wiring
+|  |- WTDeck.Core/               # domain models, rules, contracts, key bindings
+|  |- WTDeck.Telemetry/          # War Thunder telemetry source and mapping
+|  |- WTDeck.Input.Windows/      # Win32 keyboard input boundary
+|  |- WTDeck.Ipc/                # local HTTP bridge between app and plugin
+|  |- WTDeck.StreamDock/         # plugin/profile sync and process control
+|  `- WTDeck.Plugin/             # plain HTML/JS Stream Controller plugin assets
 |- tests/
 |  |- WTDeck.Core.Tests/
 |  |- WTDeck.Telemetry.Tests/
 |  |- WTDeck.Ipc.Tests/
 |  |- WTDeck.App.IntegrationTests/
-|  `- WTDeck.Plugin.Tests/
+|  `- WTDeck.StreamDock.Tests/
 |- docs/
-|  |- architecture.md
-|  |- protocol.md
-|  |- configuration.md
-|  `- troubleshooting.md
 |- build/
-|  |- package-plugin.ps1
-|  |- publish-app.ps1
-|  `- validate-quality.ps1
 |- assets/
-|  |- plugin/
-|  `- icons/
 |- README.md
-`- AGENTS.md
+|- CONTRIBUTING.md
+|- SECURITY.md
+`- CLAUDE.md
 ```
 
-## Domain boundaries
+### Build and test
 
-### Telemetry
-Telemetry code must be isolated behind interfaces.
+Core validation commands:
 
-Example direction:
+```powershell
+dotnet restore
+dotnet build -c Release -warnaserror
+dotnet test -c Release --no-build
+dotnet format --verify-no-changes
+pwsh .\build\validate-quality.ps1
+```
 
-- `ITelemetrySource`
-- `ITelemetryParser`
-- `FlightState`
-- `FlightStateSnapshot`
+The Stream Controller plugin in this repository is currently plain HTML/JavaScript. There is no `npm`-based build pipeline yet. Plugin validation currently consists of manifest parsing, asset checks, and the relevant .NET integration tests.
 
-Do not spread raw telemetry dictionaries across the codebase.
+### Debug and emulation harness
 
-### Rule engine
-The rule engine should convert `FlightState` into application-level decisions.
+WTDeck includes a built-in test harness for local validation without a live plugin sync/restart cycle.
 
-Examples:
+Live debug mode:
 
-- button visual state
-- alert severity
-- warnings
-- disabled/enabled decisions
-- action availability
+```powershell
+dotnet run --project .\src\WTDeck.App\WTDeck.App.csproj -- --debug
+```
 
-Do not mix rule logic with UI rendering code.
+Deterministic emulation mode:
 
-### Stream Deck mapping
-A dedicated mapper should convert domain state into button presentation.
+```powershell
+dotnet run --project .\src\WTDeck.App\WTDeck.App.csproj -- --emulate-api .\scenarios\landing-gear-cycle.json
+```
 
-Examples:
-
-- title text
-- icon key
-- state index
-- enabled flag
-- status badge
-
-### Keyboard input
-All keyboard emission must go through a single abstraction.
-
-Examples:
-
-- `IKeyboardSender`
-- `WindowsKeyboardSender`
-- `KeyChord`
-- `VirtualKey`
-
-No direct `SendInput` calls are allowed outside `WTDeck.Input.Windows`.
-
-## Runtime flow
-
-### Startup
-1. User starts `WTDeck.exe`.
-2. App loads configuration.
-3. App validates plugin installation status.
-4. App starts IPC server.
-5. App starts telemetry reader.
-6. App starts rule engine.
-7. App publishes button states to plugin clients.
-
-### Button click
-1. User presses a Stream Deck key.
-2. Plugin sends a command to the app.
-3. App resolves the command to a domain action.
-4. Input layer emits the configured key chord.
-5. App logs the action and updates state if needed.
-
-### Shutdown
-1. App stops telemetry reader.
-2. App drains and closes IPC.
-3. App flushes logs.
-4. App exits cleanly.
-
-## Configuration model
-
-Use declarative configuration and avoid hardcoding per-button behavior in code.
-
-Suggested levels:
-
-### Global config
-- telemetry source
-- IPC endpoint
-- logging level
-- update cadence
-- plugin install path or package asset path
-
-### Profile config
-- action-to-key mappings
-- thresholds
-- aircraft-specific overrides
-- display preferences
-
-### Button config
-- button id
-- action id
-- title
-- icon set
-- visual rule id
-- cooldown
-- optional tooltip/debug label
-
-## Plugin installation UX
-
-The desktop app should expose an **Install Plugin** button.
-
-Recommended implementation:
-
-1. Bundle the `.streamDeckPlugin` package with the app or generate it during release.
-2. On button click, extract or locate the package.
-3. Launch the package using the shell.
-4. Let Stream Deck handle installation.
-5. Verify installation status and surface clear feedback to the user.
-
-Do not implement plugin installation by manually copying unknown files into Stream Deck internal directories unless absolutely required for a special deployment mode.
-
-## Coding standards
-
-### General
-- prefer small classes with one responsibility
-- keep business logic out of UI and plugin code
-- prefer explicit models over loose dictionaries
-- prefer immutable DTOs and records where appropriate
-- avoid static global state
-- log with structure, not with ad hoc string dumps
-
-### .NET
-- enable nullable reference types
-- treat warnings seriously; prefer warnings as errors in CI
-- use dependency injection at boundaries
-- keep async flows truly async
-- use cancellation tokens for long-running operations
-- avoid `Thread.Sleep`
-- do not swallow exceptions silently
-
-### TypeScript plugin
-- use `strict: true`
-- avoid `any`
-- keep plugin code dumb and transport-focused
-- centralize protocol definitions
-- validate incoming messages defensively
-
-## Testing strategy
-
-### Unit tests
-Required for:
+The emulation run validates two gates:
 
 - telemetry parsing
-- rule engine behavior
-- configuration validation
-- action mapping
-- IPC message serialization
-- plugin command handling
+- plugin-facing UI output
 
-### Integration tests
-Required for:
+See [docs/testing.md](docs/testing.md) for the full workflow, console output format, and scenario file schema.
 
-- app <-> plugin protocol compatibility
-- end-to-end command dispatch
-- telemetry source to button-state pipeline
-- plugin installation flow where practical
+## Architecture direction
 
-### Manual test matrix
-Before release, validate at least:
+WTDeck is intentionally split into:
 
-- plugin install on clean machine
-- app startup without Stream Deck running
-- app startup with Stream Deck running
-- telemetry disconnect / reconnect
-- repeated key presses
-- invalid config handling
-- graceful shutdown while connected
-- War Thunder active and inactive windows
+- a Windows app that owns telemetry, rule evaluation, diagnostics, and input behavior
+- a thin Stream Controller plugin that only renders state and forwards events
+- shared contracts and deterministic tests around the app/plugin boundary
 
-## Build and test commands
+If you are evaluating a change, keep the plugin thin and keep Win32 input isolated in `WTDeck.Input.Windows`.
 
-### .NET
-```bash
-dotnet restore
-dotnet build -c Release
-dotnet test -c Release --no-build
-```
+## Roadmap
 
-### .NET formatting and analyzers
-```bash
-dotnet format --verify-no-changes
-dotnet build -c Release -warnaserror
-```
+Current priorities:
 
-### Plugin
-```bash
-cd src/WTDeck.Plugin
-npm ci
-npm run lint
-npm run typecheck
-npm run test
-npm run build
-```
+- stabilize the landing gear vertical slice
+- improve app UX and configuration management
+- broaden telemetry coverage and aircraft-specific behavior
+- package the app/plugin cleanly for public testing
+- add CI and release automation once the workflow is stable
 
-## Quality validation gate
+## Contributing and support
 
-A change should be considered merge-ready only if all items below pass:
+- Read [CONTRIBUTING.md](CONTRIBUTING.md) before opening a pull request.
+- Use [GitHub Issues](../../issues) for bugs, feature requests, and support questions once the repo is on GitHub.
+- Report security issues privately as described in [SECURITY.md](SECURITY.md).
+- Community expectations are defined in [CODE_OF_CONDUCT.md](CODE_OF_CONDUCT.md).
 
-1. `dotnet build -c Release -warnaserror`
-2. `dotnet test -c Release --no-build`
-3. `dotnet format --verify-no-changes`
-4. plugin lint, typecheck, tests, and build
-5. no architecture boundary violations
-6. any new behavior includes tests
-7. docs updated if contracts or config changed
+## License
 
-Suggested one-command validator:
-
-```bash
-pwsh ./build/validate-quality.ps1
-```
-
-Suggested script responsibilities:
-
-- restore dependencies
-- build all .NET projects
-- run .NET tests
-- run formatting checks
-- run plugin lint/typecheck/tests/build
-- fail fast on the first broken gate
-- return non-zero exit code
-
-## Release process
-
-### App release
-Use `dotnet publish` for a Windows self-contained single-file build.
-
-Example:
-
-```bash
-dotnet publish ./src/WTDeck.App/WTDeck.App.csproj \
-  -c Release \
-  -r win-x64 \
-  -p:PublishSingleFile=true \
-  -p:SelfContained=true
-```
-
-### Plugin release
-Package the plugin as `.streamDeckPlugin` during CI or release packaging.
-
-### Final distribution
-Release artifacts should include:
-
-- `WTDeck.exe`
-- plugin package
-- default config
-- changelog
-- license file
-
-## Open source quality checklist
-
-A pull request should not be merged unless it satisfies all of these:
-
-- clear purpose and scope
-- code follows architecture boundaries
-- tests added or updated
-- no dead code or commented-out experiments
-- no unchecked hardcoded file paths
-- no hidden magic strings for actions
-- logs are useful and not noisy
-- docs updated where needed
-- build passes locally and in CI
-
-## Non-goals
-
-Avoid these unless there is a strong documented reason:
-
-- placing all logic inside the Stream Deck plugin
-- direct Win32 input calls from random classes
-- hardcoding user keybinds in source
-- mixing UI rendering with domain rules
-- ad hoc JSON payloads without shared contract types
-- plugin reinstall on every normal startup
-
-## First implementation milestones
-
-### Milestone 1: vertical slice
-- app boots
-- plugin connects
-- one telemetry value is parsed
-- one button updates visually
-- one button press triggers one mapped key chord
-
-### Milestone 2: stability
-- reconnect logic
-- config validation
-- structured logging
-- multiple buttons and states
-- cooldown and debounce
-
-### Milestone 3: polish
-- installer UX
-- plugin install verification
-- tray mode
-- release packaging
-- documentation and screenshots
-
-## Contribution expectations
-
-Contributors should preserve the architecture. New features must extend the existing layers rather than bypass them. If a proposed shortcut breaks separation of concerns, prefer to redesign the layer instead of introducing a one-off exception.
+WTDeck is licensed under the [Apache License 2.0](LICENSE).
