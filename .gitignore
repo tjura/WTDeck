@@ -17,6 +17,7 @@ dist/
 ## IDE
 .idea/
 .vscode/
+.codex/
 *.swp
 *.swo
 
@@ -24,6 +25,10 @@ dist/
 Thumbs.db
 Desktop.ini
 .DS_Store
+
+## Local secrets
+.env
+.env.local
 
 ## Build output
 *.streamDeckPlugin

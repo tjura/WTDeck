@@ -15,6 +15,7 @@ public static class DeckButtonStateMapper
     public const string StatusDamaged = "danger";
     public const string StatusDisabled = "unavailable";
     public const string StatusUnknown = "unknown";
+    public const string StatusReady = "ready";
 
     public static string ToStatusKey(string iconKey) => iconKey switch
     {
@@ -24,6 +25,9 @@ public static class DeckButtonStateMapper
         "gear-retracting" => StatusRetracting,
         "gear-damaged" => StatusDamaged,
         "gear-disabled" => StatusDisabled,
+        "flare-ready" => StatusReady,
+        "flare-unavailable" => StatusDisabled,
+        "flare-unknown" => StatusUnknown,
         _ => StatusUnknown,
     };
 }

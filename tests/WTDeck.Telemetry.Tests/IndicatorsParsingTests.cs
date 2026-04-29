@@ -65,6 +65,32 @@ public class IndicatorsParsingTests
     }
 
     [Fact]
+    public async Task Parses_explicit_flare_count_from_indicators()
+    {
+        var indicators = """{"valid":true,"type":"a_4n","flares":42,"weapon1":999}""";
+        var state = """{"valid":true}""";
+        var source = CreateSource(Ok(indicators, state));
+
+        var result = await source.GetCurrentStateAsync(CancellationToken.None);
+
+        result.Should().NotBeNull();
+        result!.FlaresRemaining.Should().Be(42);
+    }
+
+    [Fact]
+    public async Task Ignores_generic_weapon_fields_for_flare_count()
+    {
+        var indicators = """{"valid":true,"type":"a_4n","weapon1":42}""";
+        var state = """{"valid":true}""";
+        var source = CreateSource(Ok(indicators, state));
+
+        var result = await source.GetCurrentStateAsync(CancellationToken.None);
+
+        result.Should().NotBeNull();
+        result!.FlaresRemaining.Should().BeNull();
+    }
+
+    [Fact]
     public async Task Falls_back_to_indicators_when_state_invalid()
     {
         // If /state reports valid=false, the mapper should fall back to the

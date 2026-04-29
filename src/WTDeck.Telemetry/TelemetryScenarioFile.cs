@@ -63,6 +63,10 @@ public sealed class TelemetryScenarioFile
                 ? JsonSerializer.Deserialize<TelemetryScenarioUiExpectation>(uiExpectationElement.GetRawText(), JsonOptions)
                 : null;
 
+            var expectPanel = stepElement.TryGetProperty("expectPanel", out var panelExpectationElement)
+                ? JsonSerializer.Deserialize<TelemetryScenarioPanelExpectation>(panelExpectationElement.GetRawText(), JsonOptions)
+                : null;
+
             var commands = stepElement.TryGetProperty("commands", out var commandElement)
                 ? JsonSerializer.Deserialize<List<TelemetryScenarioCommand>>(commandElement.GetRawText(), JsonOptions) ?? []
                 : [];
@@ -74,6 +78,7 @@ public sealed class TelemetryScenarioFile
                 StateJson = stateJson,
                 ExpectTelemetry = expectTelemetry,
                 ExpectUi = expectUi,
+                ExpectPanel = expectPanel,
                 Commands = commands,
             });
         }
@@ -97,6 +102,7 @@ public sealed class TelemetryScenarioStep
     public string? StateJson { get; init; }
     public TelemetryScenarioTelemetryExpectation? ExpectTelemetry { get; init; }
     public TelemetryScenarioUiExpectation? ExpectUi { get; init; }
+    public TelemetryScenarioPanelExpectation? ExpectPanel { get; init; }
     public IReadOnlyList<TelemetryScenarioCommand> Commands { get; init; } = [];
 }
 
@@ -110,6 +116,8 @@ public sealed class TelemetryScenarioTelemetryExpectation
     public float? GearsCommand { get; init; }
     public float? GearsLamp { get; init; }
     public float? IndicatedAirspeedKmh { get; init; }
+    public float? LoadFactorNy { get; init; }
+    public int? FlaresRemaining { get; init; }
 }
 
 public sealed class TelemetryScenarioUiExpectation
@@ -127,4 +135,22 @@ public sealed class TelemetryScenarioCommand
     public string ActionKey { get; init; } = "landing-gear";
     public IReadOnlyList<int> ExpectedScanCodes { get; init; } = [];
     public TelemetryScenarioUiExpectation? ExpectedUi { get; init; }
+}
+
+public sealed class TelemetryScenarioPanelExpectation
+{
+    public string? StatusKey { get; init; }
+    public bool? IsAvailable { get; init; }
+    public IReadOnlyDictionary<string, TelemetryScenarioAlertExpectation> Alerts { get; init; } =
+        new Dictionary<string, TelemetryScenarioAlertExpectation>();
+}
+
+public sealed class TelemetryScenarioAlertExpectation
+{
+    public string? Label { get; init; }
+    public string? Value { get; init; }
+    public string? StatusKey { get; init; }
+    public string? AlertLevel { get; init; }
+    public bool? IsAvailable { get; init; }
+    public float? NumericValue { get; init; }
 }

@@ -22,6 +22,7 @@ public sealed class DebugValidationHostedService : BackgroundService
 
     private string? _lastTelemetrySummary;
     private string? _lastUiSummary;
+    private string? _lastPanelSummary;
 
     public DebugValidationHostedService(
         RuntimeModeOptions runtimeMode,
@@ -44,6 +45,7 @@ public sealed class DebugValidationHostedService : BackgroundService
     protected override async Task ExecuteAsync(CancellationToken stoppingToken)
     {
         _pluginBridge.ButtonStateSent += OnButtonStateSent;
+        _pluginBridge.PanelStateSent += OnPanelStateSent;
 
         try
         {
@@ -75,6 +77,7 @@ public sealed class DebugValidationHostedService : BackgroundService
         {
             _telemetryPoller.StateChanged -= OnLiveTelemetryStateChanged;
             _pluginBridge.ButtonStateSent -= OnButtonStateSent;
+            _pluginBridge.PanelStateSent -= OnPanelStateSent;
         }
     }
 
@@ -125,6 +128,9 @@ public sealed class DebugValidationHostedService : BackgroundService
             if (execution.Step.ExpectUi is not null)
                 await ValidateUiAsync(execution.StepNumber, execution.Step.Name, execution.Step.ExpectUi, ct);
 
+            if (execution.Step.ExpectPanel is not null)
+                await ValidatePanelAsync(execution.StepNumber, execution.Step.Name, execution.Step.ExpectPanel, ct);
+
             if (execution.Step.Commands.Count > 0)
                 await RunCommandsAsync(execution.StepNumber, execution.Step.Name, execution.Step.Commands, ct);
         }
@@ -152,6 +158,8 @@ public sealed class DebugValidationHostedService : BackgroundService
             gear = snapshot?.Gear ?? 0f,
             gearsCommand = snapshot?.GearsCommand ?? 0f,
             gearsLamp = snapshot?.GearsLamp ?? 0f,
+            flaresRemaining = snapshot?.FlaresRemaining,
+            loadFactorNy = snapshot?.LoadFactorNy ?? 0f,
             indicatedAirspeedKmh = snapshot?.IndicatedAirspeedKmh ?? 0f
         };
 
@@ -195,6 +203,28 @@ public sealed class DebugValidationHostedService : BackgroundService
         });
     }
 
+    private void OnPanelStateSent(object? sender, StreamDockPanelUpdate update)
+    {
+        var payload = new
+        {
+            statusKey = update.Panel.StatusKey,
+            isAvailable = update.Panel.IsAvailable,
+            alerts = update.Alerts
+        };
+
+        var summary = JsonSerializer.Serialize(payload, JsonOptions);
+        if (!_runtimeMode.EmulateApi && summary == _lastPanelSummary)
+            return;
+
+        _lastPanelSummary = summary;
+        WriteEvent(new
+        {
+            @event = "panel_state",
+            mode = _runtimeMode.EmulateApi ? "scenario" : "live",
+            payload
+        });
+    }
+
     private void PrintTelemetry(int stepNumber, string? stepName, FlightSnapshot? snapshot, bool isAvailable)
     {
         WriteEvent(new
@@ -212,6 +242,8 @@ public sealed class DebugValidationHostedService : BackgroundService
                 gear = snapshot?.Gear ?? 0f,
                 gearsCommand = snapshot?.GearsCommand ?? 0f,
                 gearsLamp = snapshot?.GearsLamp ?? 0f,
+                flaresRemaining = snapshot?.FlaresRemaining,
+                loadFactorNy = snapshot?.LoadFactorNy ?? 0f,
                 indicatedAirspeedKmh = snapshot?.IndicatedAirspeedKmh ?? 0f
             }
         });
@@ -256,6 +288,37 @@ public sealed class DebugValidationHostedService : BackgroundService
             name = stepName,
             passed = false,
             actionKey = expectation.ActionKey,
+            error
+        });
+    }
+
+    private async Task ValidatePanelAsync(int stepNumber, string? stepName, TelemetryScenarioPanelExpectation expectation, CancellationToken ct)
+    {
+        var matched = await WaitForConditionAsync(() =>
+            ValidatePanel(expectation, _pluginBridge.LatestPanelState) is null, TimeSpan.FromSeconds(2), ct);
+
+        if (matched)
+        {
+            WriteEvent(new
+            {
+                @event = "gate_result",
+                gate = "panel",
+                step = stepNumber,
+                name = stepName,
+                passed = true
+            });
+            return;
+        }
+
+        var error = ValidatePanel(expectation, _pluginBridge.LatestPanelState) ?? "Panel expectation did not match within timeout.";
+        _runState.FailUi($"Step {stepNumber}: {error}");
+        WriteEvent(new
+        {
+            @event = "gate_result",
+            gate = "panel",
+            step = stepNumber,
+            name = stepName,
+            passed = false,
             error
         });
     }
@@ -349,6 +412,12 @@ public sealed class DebugValidationHostedService : BackgroundService
         if (expectation.IndicatedAirspeedKmh.HasValue && !Approximately(snapshot?.IndicatedAirspeedKmh ?? 0f, expectation.IndicatedAirspeedKmh.Value))
             mismatches.Add($"expected indicatedAirspeedKmh={expectation.IndicatedAirspeedKmh.Value} but got {snapshot?.IndicatedAirspeedKmh ?? 0f}");
 
+        if (expectation.LoadFactorNy.HasValue && !Approximately(snapshot?.LoadFactorNy ?? 0f, expectation.LoadFactorNy.Value))
+            mismatches.Add($"expected loadFactorNy={expectation.LoadFactorNy.Value} but got {snapshot?.LoadFactorNy ?? 0f}");
+
+        if (expectation.FlaresRemaining.HasValue && snapshot?.FlaresRemaining != expectation.FlaresRemaining.Value)
+            mismatches.Add($"expected flaresRemaining={expectation.FlaresRemaining.Value} but got {snapshot?.FlaresRemaining?.ToString() ?? "<null>"}");
+
         return mismatches.Count == 0 ? null : string.Join("; ", mismatches);
     }
 
@@ -373,6 +442,46 @@ public sealed class DebugValidationHostedService : BackgroundService
 
         if (expectation.AlertLevel is not null && !string.Equals(update.AlertLevel, expectation.AlertLevel, StringComparison.Ordinal))
             mismatches.Add($"expected alertLevel='{expectation.AlertLevel}' but got '{update.AlertLevel}'");
+
+        return mismatches.Count == 0 ? null : string.Join("; ", mismatches);
+    }
+
+    private static string? ValidatePanel(TelemetryScenarioPanelExpectation expectation, StreamDockPanelUpdate update)
+    {
+        var mismatches = new List<string>();
+
+        if (expectation.StatusKey is not null && !string.Equals(update.Panel.StatusKey, expectation.StatusKey, StringComparison.Ordinal))
+            mismatches.Add($"expected panel statusKey='{expectation.StatusKey}' but got '{update.Panel.StatusKey}'");
+
+        if (expectation.IsAvailable.HasValue && update.Panel.IsAvailable != expectation.IsAvailable.Value)
+            mismatches.Add($"expected panel isAvailable={expectation.IsAvailable.Value} but got {update.Panel.IsAvailable}");
+
+        foreach (var (key, alertExpectation) in expectation.Alerts)
+        {
+            if (!update.Alerts.TryGetValue(key, out var alert))
+            {
+                mismatches.Add($"expected alert '{key}' to be present");
+                continue;
+            }
+
+            if (alertExpectation.Label is not null && !string.Equals(alert.Label, alertExpectation.Label, StringComparison.Ordinal))
+                mismatches.Add($"expected alert '{key}' label='{alertExpectation.Label}' but got '{alert.Label}'");
+
+            if (alertExpectation.Value is not null && !string.Equals(alert.Value, alertExpectation.Value, StringComparison.Ordinal))
+                mismatches.Add($"expected alert '{key}' value='{alertExpectation.Value}' but got '{alert.Value}'");
+
+            if (alertExpectation.StatusKey is not null && !string.Equals(alert.StatusKey, alertExpectation.StatusKey, StringComparison.Ordinal))
+                mismatches.Add($"expected alert '{key}' statusKey='{alertExpectation.StatusKey}' but got '{alert.StatusKey}'");
+
+            if (alertExpectation.AlertLevel is not null && !string.Equals(alert.AlertLevel, alertExpectation.AlertLevel, StringComparison.Ordinal))
+                mismatches.Add($"expected alert '{key}' alertLevel='{alertExpectation.AlertLevel}' but got '{alert.AlertLevel}'");
+
+            if (alertExpectation.IsAvailable.HasValue && alert.IsAvailable != alertExpectation.IsAvailable.Value)
+                mismatches.Add($"expected alert '{key}' isAvailable={alertExpectation.IsAvailable.Value} but got {alert.IsAvailable}");
+
+            if (alertExpectation.NumericValue.HasValue && !Approximately(alert.NumericValue ?? 0f, alertExpectation.NumericValue.Value))
+                mismatches.Add($"expected alert '{key}' numericValue={alertExpectation.NumericValue.Value} but got {alert.NumericValue?.ToString() ?? "<null>"}");
+        }
 
         return mismatches.Count == 0 ? null : string.Join("; ", mismatches);
     }

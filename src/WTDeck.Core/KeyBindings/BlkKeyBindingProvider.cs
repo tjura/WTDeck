@@ -9,6 +9,10 @@ public sealed class BlkKeyBindingProvider : IKeyBindingProvider
         ActionId.Gear,
         [new KeyChord([34])]); // G key
 
+    private static readonly KeyBinding DefaultLaunchFlaresBinding = new(
+        ActionId.LaunchFlares,
+        [new KeyChord([45])]); // X key
+
     private readonly Dictionary<ActionId, KeyBinding> _bindings;
 
     private BlkKeyBindingProvider(Dictionary<ActionId, KeyBinding> bindings)
@@ -37,6 +41,7 @@ public sealed class BlkKeyBindingProvider : IKeyBindingProvider
 
         // Apply defaults for missing bindings
         bindings.TryAdd(ActionId.Gear, DefaultGearBinding);
+        bindings.TryAdd(ActionId.LaunchFlares, DefaultLaunchFlaresBinding);
 
         return new BlkKeyBindingProvider(bindings);
     }

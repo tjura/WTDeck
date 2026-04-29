@@ -60,4 +60,78 @@ public sealed class CommandLineOptionsParserTests
         result.IsSuccess.Should().BeFalse();
         result.Error.Should().Contain("Unknown argument");
     }
+
+    [Fact]
+    public void Parse_capture_8111_uses_defaults_and_disables_side_effects()
+    {
+        var result = CommandLineOptionsParser.Parse(["--capture-8111"]);
+
+        result.IsSuccess.Should().BeTrue();
+        result.Options.Should().NotBeNull();
+        result.Options!.Capture8111.Should().BeTrue();
+        result.Options.DebugEnabled.Should().BeTrue();
+        result.Options.DisableSideEffects.Should().BeTrue();
+        result.Options.UseTray.Should().BeFalse();
+        result.Options.CaptureOptions.OutputDirectory.Should().BeNull();
+        result.Options.CaptureOptions.DurationSeconds.Should().Be(300);
+        result.Options.CaptureOptions.IntervalMs.Should().Be(500);
+        result.Options.CaptureOptions.DumpIntervalSeconds.Should().Be(10);
+    }
+
+    [Fact]
+    public void Parse_capture_8111_accepts_custom_values()
+    {
+        var result = CommandLineOptionsParser.Parse([
+            "--capture-8111",
+            "--capture-output",
+            "tmp/capture",
+            "--capture-duration",
+            "60",
+            "--capture-interval-ms",
+            "250",
+            "--capture-dump-interval-sec",
+            "5"
+        ]);
+
+        result.IsSuccess.Should().BeTrue();
+        result.Options.Should().NotBeNull();
+        result.Options!.CaptureOptions.OutputDirectory.Should().Be(Path.GetFullPath("tmp/capture"));
+        result.Options.CaptureOptions.DurationSeconds.Should().Be(60);
+        result.Options.CaptureOptions.IntervalMs.Should().Be(250);
+        result.Options.CaptureOptions.DumpIntervalSeconds.Should().Be(5);
+    }
+
+    [Fact]
+    public void Parse_analyze_8111_capture_resolves_directory()
+    {
+        var result = CommandLineOptionsParser.Parse(["--analyze-8111-capture", "tmp/capture"]);
+
+        result.IsSuccess.Should().BeTrue();
+        result.Options.Should().NotBeNull();
+        result.Options!.Analyze8111Capture.Should().BeTrue();
+        result.Options.Analyze8111CaptureDirectory.Should().Be(Path.GetFullPath("tmp/capture"));
+        result.Options.DisableSideEffects.Should().BeTrue();
+    }
+
+    [Fact]
+    public void Parse_rejects_capture_options_without_capture_mode()
+    {
+        var result = CommandLineOptionsParser.Parse(["--capture-duration", "60"]);
+
+        result.IsSuccess.Should().BeFalse();
+        result.Error.Should().Contain("--capture-8111");
+    }
+
+    [Fact]
+    public void Parse_rejects_multiple_exclusive_modes()
+    {
+        var result = CommandLineOptionsParser.Parse([
+            "--capture-8111",
+            "--emulate-api",
+            "scenarios/sample.json"
+        ]);
+
+        result.IsSuccess.Should().BeFalse();
+        result.Error.Should().Contain("Choose only one");
+    }
 }

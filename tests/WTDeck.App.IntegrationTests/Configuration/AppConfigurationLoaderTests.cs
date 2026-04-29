@@ -45,7 +45,10 @@ public sealed class AppConfigurationLoaderTests
                 ["StreamDock:DeviceModel"] = "Model",
                 ["StreamDock:ProfileName"] = "Profile",
                 ["StreamDock:PluginUuid"] = "plugin.uuid",
-                ["StreamDock:PluginActionUuid"] = "plugin.action"
+                ["StreamDock:PluginActionUuid"] = "plugin.action",
+                ["StreamDock:PluginFlaresActionUuid"] = "plugin.flares",
+                ["StreamDock:PluginFlightAlertsActionUuid"] = "plugin.flight-alerts",
+                ["StreamDock:FlightAlertsPanelSlot"] = "5,0"
             })
             .Build();
 
@@ -72,6 +75,9 @@ public sealed class AppConfigurationLoaderTests
         result.StreamDockOptions.ProfileName.Should().Be("Profile");
         result.StreamDockOptions.PluginUuid.Should().Be("plugin.uuid");
         result.StreamDockOptions.PluginActionUuid.Should().Be("plugin.action");
+        result.StreamDockOptions.PluginFlaresActionUuid.Should().Be("plugin.flares");
+        result.StreamDockOptions.PluginFlightAlertsActionUuid.Should().Be("plugin.flight-alerts");
+        result.StreamDockOptions.FlightAlertsPanelSlot.Should().Be("5,0");
     }
 
     [Fact]

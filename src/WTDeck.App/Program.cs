@@ -2,16 +2,19 @@ using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
 using Microsoft.Extensions.Logging;
 using WTDeck.App;
+using WTDeck.App.Capture;
 using WTDeck.App.Configuration;
 using WTDeck.App.Debug;
 using WTDeck.App.Detection;
 using WTDeck.App.Tray;
 using WTDeck.Core.Alerts;
+using WTDeck.Core.FlightAlerts;
 using WTDeck.Core.Interfaces;
 using WTDeck.Core.KeyBindings;
 using WTDeck.Core.Profiles;
 using WTDeck.Core.Profiles.Aircraft;
 using WTDeck.Core.Rules;
+using WTDeck.Core.Rules.Flares;
 using WTDeck.Core.Rules.Gear;
 using WTDeck.Input.Windows;
 using WTDeck.Ipc.Http;
@@ -60,6 +63,27 @@ var builder = Host.CreateApplicationBuilder(args);
 var appConfiguration = AppConfigurationLoader.Load(builder.Configuration);
 var appOptions = appConfiguration.AppOptions;
 
+if (runtimeMode.Analyze8111Capture)
+{
+    var analyzer = new WarThunder8111CaptureAnalyzer(Console.Out);
+    Environment.ExitCode = await analyzer.AnalyzeAsync(runtimeMode.Analyze8111CaptureDirectory!, CancellationToken.None);
+    return;
+}
+
+if (runtimeMode.Capture8111)
+{
+    using var captureHttpClient = new HttpClient
+    {
+        Timeout = TimeSpan.FromMilliseconds(Math.Max(250, runtimeMode.CaptureOptions.IntervalMs - 50))
+    };
+    var captureRunner = new WarThunder8111CaptureRunner(
+        captureHttpClient,
+        appConfiguration.TelemetryOptions.BaseUrl,
+        Console.Out);
+    Environment.ExitCode = await captureRunner.RunAsync(runtimeMode.CaptureOptions, CancellationToken.None);
+    return;
+}
+
 // Auto-detect game folder
 appOptions.GameFolder ??= GameFolderDetector.Detect();
 if (appOptions.GameFolder is not null)
@@ -72,7 +96,7 @@ else
 IKeyBindingProvider keyBindingProvider;
 if (runtimeMode.EmulateApi)
 {
-    Console.WriteLine("Scenario mode: using default key bindings (G for gear)");
+    Console.WriteLine("Scenario mode: using default key bindings (G for gear, X for flares)");
     keyBindingProvider = BlkKeyBindingProvider.FromReader(new StringReader(""));
 }
 else
@@ -87,7 +111,7 @@ else
     }
     else
     {
-        Console.WriteLine("No key binding file found, using defaults (G for gear)");
+        Console.WriteLine("No key binding file found, using defaults (G for gear, X for flares)");
         keyBindingProvider = BlkKeyBindingProvider.FromReader(new StringReader(""));
     }
 }
@@ -100,6 +124,15 @@ if (gearBinding is not null)
         gearBinding.Chords.Select(c =>
             string.Join("+", c.ScanCodes.Select(ScanCodeMap.GetName))));
     Console.WriteLine($"Gear key binding: {keys}");
+}
+
+var flaresBinding = keyBindingProvider.GetBinding(WTDeck.Core.Models.ActionId.LaunchFlares);
+if (flaresBinding is not null)
+{
+    var keys = string.Join(" OR ",
+        flaresBinding.Chords.Select(c =>
+            string.Join("+", c.ScanCodes.Select(ScanCodeMap.GetName))));
+    Console.WriteLine($"Launch flares key binding: {keys}");
 }
 
 // Telemetry
@@ -146,9 +179,11 @@ builder.Services.AddSingleton<IAircraftProfileRegistry>(sp =>
 // Core - alerts
 builder.Services.AddSingleton<IAlertActionBindingRegistry, AlertActionBindingRegistry>();
 builder.Services.AddSingleton<IAlertCenter, AlertCenter>();
+builder.Services.AddSingleton<FlightAlertPanelEvaluator>();
 
 // Core - rules + rule engine
 builder.Services.AddSingleton<IRule, GearButtonRule>();
+builder.Services.AddSingleton<IRule, FlaresButtonRule>();
 builder.Services.AddSingleton<IRule, GearOverspeedRule>();
 builder.Services.AddSingleton<IRuleEngine, CompositeRuleEngine>();
 

@@ -16,5 +16,10 @@ public static class A4NSkyhawkProfile
         Id = TypeKey,
         DisplayName = "A-4N Skyhawk",
         GearOperatingSpeedKmh = 450f,
+        MaxPositiveG = 10f,
+        OverGWarningThreshold = 10f,
+        OverGDangerThreshold = 11f,
+        HasFlares = true,
+        DefaultFlares = 60,
     };
 }

@@ -15,11 +15,18 @@ namespace WTDeck.Ipc.Http;
 /// </summary>
 public sealed class HttpPluginBridge : IPluginBridge, IDisposable
 {
+    private static readonly string[] PublishedActionKeys =
+    [
+        StreamDockState.LandingGearActionKey,
+        StreamDockState.LaunchFlaresActionKey
+    ];
+
     private readonly HttpPluginBridgeOptions _options;
     private readonly ILogger<HttpPluginBridge> _logger;
     private readonly HttpListener _listener = new();
     private readonly HttpRouter _router = new();
     private readonly ConcurrentDictionary<string, ButtonStateUpdate> _stateByActionKey = new();
+    private StreamDockPanelUpdate _lastPanelUpdate = StreamDockPanelUpdate.Unavailable();
     private CancellationTokenSource? _cts;
     private Task? _listenerTask;
     private DateTimeOffset _lastHeartbeat = DateTimeOffset.MinValue;
@@ -82,6 +89,12 @@ public sealed class HttpPluginBridge : IPluginBridge, IDisposable
     public Task SendButtonStateAsync(ButtonStateUpdate update, CancellationToken ct)
     {
         _stateByActionKey[update.ActionKey] = update;
+        return Task.CompletedTask;
+    }
+
+    public Task SendPanelStateAsync(StreamDockPanelUpdate update, CancellationToken ct)
+    {
+        _lastPanelUpdate = update;
         return Task.CompletedTask;
     }
 
@@ -149,13 +162,17 @@ public sealed class HttpPluginBridge : IPluginBridge, IDisposable
 
     private async Task HandleGetState(HttpListenerContext context, RouteMatch match, CancellationToken ct)
     {
-        var gearUpdate = _stateByActionKey.TryGetValue("landing-gear", out var gear) ? gear : null;
+        var actions = _stateByActionKey.ToDictionary(
+            pair => pair.Key,
+            pair => ToActionState(pair.Value),
+            StringComparer.Ordinal);
 
-        var state = new StreamDockState(
-            GearStatus: gearUpdate?.StatusKey ?? DeckButtonStateMapper.StatusUnknown,
-            GearTitle: gearUpdate?.Title ?? "",
-            GearBlinking: gearUpdate?.IsBlinking ?? false,
-            GearAlertLevel: gearUpdate?.AlertLevel ?? "None");
+        foreach (var actionKey in PublishedActionKeys)
+        {
+            actions.TryAdd(actionKey, StreamDockState.UnknownActionState());
+        }
+
+        var state = StreamDockState.FromActions(actions, _lastPanelUpdate);
 
         var snapshot = new StreamDockStateSnapshot(
             ProtocolVersion: IpcProtocol.Version,
@@ -165,6 +182,13 @@ public sealed class HttpPluginBridge : IPluginBridge, IDisposable
 
         await WriteResponseAsync(context, 200, snapshot);
     }
+
+    private static StreamDockActionState ToActionState(ButtonStateUpdate update) => new(
+        update.StatusKey ?? DeckButtonStateMapper.StatusUnknown,
+        update.Title,
+        update.IsBlinking,
+        update.IsEnabled,
+        update.AlertLevel);
 
     private async Task HandlePostAction(HttpListenerContext context, RouteMatch match, CancellationToken ct)
     {

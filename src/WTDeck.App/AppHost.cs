@@ -3,10 +3,12 @@ using Microsoft.Extensions.Logging;
 using WTDeck.App.Concurrency;
 using WTDeck.Core.Alerts;
 using WTDeck.Core.Contracts;
+using WTDeck.Core.FlightAlerts;
 using WTDeck.Core.Interfaces;
 using WTDeck.Core.KeyBindings;
 using WTDeck.Core.Mapping;
 using WTDeck.Core.Models;
+using WTDeck.Core.Profiles;
 using WTDeck.Core.Rules;
 using WTDeck.StreamDock.Interfaces;
 using WTDeck.Telemetry;
@@ -21,6 +23,8 @@ public sealed class AppHost : BackgroundService
     private readonly IKeyBindingProvider _keyBindingProvider;
     private readonly IKeyboardSender _keyboardSender;
     private readonly IAlertCenter _alertCenter;
+    private readonly IAircraftProfileRegistry _profiles;
+    private readonly FlightAlertPanelEvaluator _flightAlertPanelEvaluator;
     private readonly IPluginSyncService _pluginSyncService;
     private readonly TimeProvider _clock;
     private readonly ILogger<AppHost> _logger;
@@ -28,6 +32,7 @@ public sealed class AppHost : BackgroundService
     private FlightSnapshot? _previousSnapshot;
     private FlightSnapshot? _lastSnapshot;
     private readonly Dictionary<string, ButtonStateUpdate> _lastUpdateByAction = new(StringComparer.Ordinal);
+    private StreamDockPanelUpdate? _lastPanelUpdate;
     private readonly SemaphoreSlim _evaluationLock = new(1, 1);
     private readonly LatestValueSignal<FlightSnapshot?> _telemetryUpdates = new();
     private Task? _telemetryProcessingTask;
@@ -39,6 +44,8 @@ public sealed class AppHost : BackgroundService
         IKeyBindingProvider keyBindingProvider,
         IKeyboardSender keyboardSender,
         IAlertCenter alertCenter,
+        IAircraftProfileRegistry profiles,
+        FlightAlertPanelEvaluator flightAlertPanelEvaluator,
         IPluginSyncService pluginSyncService,
         TimeProvider clock,
         ILogger<AppHost> logger)
@@ -49,6 +56,8 @@ public sealed class AppHost : BackgroundService
         _keyBindingProvider = keyBindingProvider;
         _keyboardSender = keyboardSender;
         _alertCenter = alertCenter;
+        _profiles = profiles;
+        _flightAlertPanelEvaluator = flightAlertPanelEvaluator;
         _pluginSyncService = pluginSyncService;
         _clock = clock;
         _logger = logger;
@@ -141,6 +150,17 @@ public sealed class AppHost : BackgroundService
                 _lastSnapshot = snapshot;
             }
 
+            var profile = _profiles.Resolve(snapshot?.AircraftType);
+            var panelUpdate = _flightAlertPanelEvaluator.Evaluate(snapshot, profile);
+            if (!PanelUpdatesEqual(_lastPanelUpdate, panelUpdate))
+            {
+                _lastPanelUpdate = panelUpdate;
+                await _pluginBridge.SendPanelStateAsync(panelUpdate, CancellationToken.None);
+                _logger.LogDebug(
+                    "Sent panel state: {Status} (alerts={AlertCount})",
+                    panelUpdate.Panel.StatusKey, panelUpdate.Alerts.Count);
+            }
+
             foreach (var buttonState in result.ButtonStates)
             {
                 var update = new ButtonStateUpdate(
@@ -180,6 +200,12 @@ public sealed class AppHost : BackgroundService
         {
             _logger.LogInformation("Button pressed: {ActionKey}", command.ActionKey);
 
+            if (string.Equals(command.ActionKey, StreamDockState.FlightAlertsActionKey, StringComparison.Ordinal))
+            {
+                _logger.LogDebug("Ignoring display-only action press: {ActionKey}", command.ActionKey);
+                return;
+            }
+
             // 1. Always try to acknowledge any active alerts for this action first.
             //    Running this before the key send means the visual/sound stop
             //    on the first press even if the game takes time to respond.
@@ -211,5 +237,22 @@ public sealed class AppHost : BackgroundService
         {
             _logger.LogWarning(ex, "Error handling button press: {ActionKey}", command.ActionKey);
         }
+    }
+
+    private static bool PanelUpdatesEqual(StreamDockPanelUpdate? left, StreamDockPanelUpdate right)
+    {
+        if (left is null)
+            return false;
+
+        if (left.Panel != right.Panel || left.Alerts.Count != right.Alerts.Count)
+            return false;
+
+        foreach (var (key, value) in left.Alerts)
+        {
+            if (!right.Alerts.TryGetValue(key, out var other) || value != other)
+                return false;
+        }
+
+        return true;
     }
 }

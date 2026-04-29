@@ -22,6 +22,7 @@ public sealed class FlightSnapshotBuilder
     private float _airbrakePercent;
     private float _gearsLamp;
     private float _gearsCommand;
+    private int? _flaresRemaining;
 
     public FlightSnapshotBuilder Invalid() { _valid = false; return this; }
     public FlightSnapshotBuilder WithType(string? type) { _aircraftType = type; return this; }
@@ -35,6 +36,7 @@ public sealed class FlightSnapshotBuilder
     public FlightSnapshotBuilder WithAirbrakePercent(float percent) { _airbrakePercent = percent; return this; }
     public FlightSnapshotBuilder WithGearsLamp(float value) { _gearsLamp = value; return this; }
     public FlightSnapshotBuilder WithGearsCommand(float value) { _gearsCommand = value; return this; }
+    public FlightSnapshotBuilder WithFlaresRemaining(int? value) { _flaresRemaining = value; return this; }
     public FlightSnapshotBuilder WithTimestamp(DateTimeOffset ts) { _timestamp = ts; return this; }
 
     public FlightSnapshot Build() => new()
@@ -52,6 +54,7 @@ public sealed class FlightSnapshotBuilder
         AirbrakePercent = _airbrakePercent,
         GearsLamp = _gearsLamp,
         GearsCommand = _gearsCommand,
+        FlaresRemaining = _flaresRemaining,
     };
 
     public static FlightSnapshot Build(Action<FlightSnapshotBuilder> configure)

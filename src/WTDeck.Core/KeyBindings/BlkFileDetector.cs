@@ -8,7 +8,7 @@ public static class BlkFileDetector
         if (dir is null || !Directory.Exists(dir))
             return null;
 
-        var blkFiles = Directory.GetFiles(dir, "*.blk")
+        var blkFiles = EnumerateBlkFiles(dir)
             .Where(IsKeyBindingFile)
             .OrderByDescending(File.GetLastWriteTimeUtc)
             .ToList();
@@ -19,6 +19,18 @@ public static class BlkFileDetector
         // Fallback: look for LAST-CONTROLER.blk specifically
         var fallback = Path.Combine(dir, "LAST-CONTROLER.blk");
         return File.Exists(fallback) ? fallback : null;
+    }
+
+    private static IEnumerable<string> EnumerateBlkFiles(string directory)
+    {
+        try
+        {
+            return Directory.EnumerateFiles(directory, "*.blk", SearchOption.AllDirectories);
+        }
+        catch
+        {
+            return [];
+        }
     }
 
     public static string? GetDefaultSavesDirectory()

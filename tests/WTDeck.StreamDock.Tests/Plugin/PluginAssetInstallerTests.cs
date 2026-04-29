@@ -55,6 +55,10 @@ public class PluginAssetInstallerTests : IDisposable
         var pluginDir = Path.Combine(_paths.PluginsDir, $"{_options.PluginUuid}.sdPlugin");
         File.Exists(Path.Combine(pluginDir, "assets", "gear-retracted.svg")).Should().BeTrue();
         File.Exists(Path.Combine(pluginDir, "assets", "gear-damaged.svg")).Should().BeTrue();
+        File.Exists(Path.Combine(pluginDir, "assets", "flare-ready.svg")).Should().BeTrue();
+        File.Exists(Path.Combine(pluginDir, "assets", "flare-unavailable.svg")).Should().BeTrue();
+        File.Exists(Path.Combine(pluginDir, "assets", "flare-unknown.svg")).Should().BeTrue();
+        File.Exists(Path.Combine(pluginDir, "assets", "flight-alerts-panel.svg")).Should().BeTrue();
         File.Exists(Path.Combine(pluginDir, "assets", "plugin-icon.svg")).Should().BeTrue();
     }
 
@@ -82,5 +86,7 @@ public class PluginAssetInstallerTests : IDisposable
         var content = await File.ReadAllTextAsync(manifestPath);
         content.Should().NotContain("tampered");
         content.Should().Contain("com.wtdeck.streamdock.gear");
+        content.Should().Contain("com.wtdeck.streamdock.flares");
+        content.Should().Contain("com.wtdeck.streamdock.flight-alerts");
     }
 }

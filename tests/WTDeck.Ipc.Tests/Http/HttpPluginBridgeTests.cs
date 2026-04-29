@@ -42,6 +42,11 @@ public class HttpPluginBridgeTests : IAsyncLifetime
 
         snapshot.Should().NotBeNull();
         snapshot!.State.GearStatus.Should().Be("unknown");
+        snapshot.State.Actions.Should().ContainKey("landing-gear");
+        snapshot.State.Actions.Should().ContainKey("launch-flares");
+        snapshot.State.Alerts.Should().ContainKey("over-g");
+        snapshot.State.Alerts["over-g"].StatusKey.Should().Be("unavailable");
+        snapshot.State.Panel.IsAvailable.Should().BeFalse();
         snapshot.ProtocolVersion.Should().Be(IpcProtocol.Version);
     }
 
@@ -65,6 +70,53 @@ public class HttpPluginBridgeTests : IAsyncLifetime
         snapshot.State.GearTitle.Should().Be("GEAR DOWN");
         snapshot.State.GearBlinking.Should().BeTrue();
         snapshot.State.GearAlertLevel.Should().Be("Info");
+        snapshot.State.Actions["landing-gear"].StatusKey.Should().Be("down");
+    }
+
+    [Fact]
+    public async Task Get_state_returns_pushed_flares_update_in_action_dictionary()
+    {
+        var update = new ButtonStateUpdate(
+            IpcProtocol.Version, "launch-flares", "FLARES\n42", null,
+            IsBlinking: false, IsEnabled: true, AlertLevel: "None", StatusKey: "ready");
+
+        await _bridge.SendButtonStateAsync(update, CancellationToken.None);
+
+        var response = await _client.GetAsync("/api/stream-dock/state");
+        response.StatusCode.Should().Be(HttpStatusCode.OK);
+
+        var json = await response.Content.ReadAsStringAsync();
+        var snapshot = JsonSerializer.Deserialize<StreamDockStateSnapshot>(json, HttpJsonSerializer.Options);
+
+        snapshot.Should().NotBeNull();
+        snapshot!.State.Actions["launch-flares"].Title.Should().Be("FLARES\n42");
+        snapshot.State.Actions["launch-flares"].StatusKey.Should().Be("ready");
+        snapshot.State.Actions["launch-flares"].IsEnabled.Should().BeTrue();
+    }
+
+    [Fact]
+    public async Task Get_state_returns_last_pushed_panel_update()
+    {
+        var panel = new StreamDockPanelUpdate(
+            new StreamDockPanelState("danger", true),
+            new Dictionary<string, StreamDockAlertState>
+            {
+                ["over-g"] = new("G", "11.0", "danger", "Danger", true, 11f)
+            });
+
+        await _bridge.SendPanelStateAsync(panel, CancellationToken.None);
+
+        var response = await _client.GetAsync("/api/stream-dock/state");
+        response.StatusCode.Should().Be(HttpStatusCode.OK);
+
+        var json = await response.Content.ReadAsStringAsync();
+        var snapshot = JsonSerializer.Deserialize<StreamDockStateSnapshot>(json, HttpJsonSerializer.Options);
+
+        snapshot.Should().NotBeNull();
+        snapshot!.State.Panel.StatusKey.Should().Be("danger");
+        snapshot.State.Panel.IsAvailable.Should().BeTrue();
+        snapshot.State.Alerts["over-g"].Value.Should().Be("11.0");
+        snapshot.State.Alerts["over-g"].AlertLevel.Should().Be("Danger");
     }
 
     [Fact]

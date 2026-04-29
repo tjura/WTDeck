@@ -13,7 +13,10 @@ public class ProfileManifestBuilderTests
         DeviceUUID = "CN001V3Device",
         DeviceSerialNumber = "8730DB78224F",
         DeviceModel = "20GBA9901",
-        PluginActionUuid = "com.wtdeck.streamdock.gear"
+        PluginActionUuid = "com.wtdeck.streamdock.gear",
+        PluginFlaresActionUuid = "com.wtdeck.streamdock.flares",
+        PluginFlightAlertsActionUuid = "com.wtdeck.streamdock.flight-alerts",
+        FlightAlertsPanelSlot = "5,0"
     };
 
     [Fact]
@@ -41,6 +44,35 @@ public class ProfileManifestBuilderTests
     }
 
     [Fact]
+    public void Profile_has_launch_flares_button_at_0_4()
+    {
+        var (_, _, manifest) = _builder.Build(_options);
+
+        manifest.Actions.Should().ContainKey("0,4");
+        var action = manifest.Actions["0,4"];
+        action.UUID.Should().Be("com.wtdeck.streamdock.flares");
+        action.Name.Should().Be("Launch Flares");
+        action.States.Should().HaveCount(1);
+        action.States[0].Image.Should().Be("assets/flare-unknown");
+        action.States[0].ShowTitle.Should().BeTrue();
+    }
+
+    [Fact]
+    public void Profile_has_flight_alerts_information_panel()
+    {
+        var (_, _, manifest) = _builder.Build(_options);
+
+        manifest.Actions.Should().ContainKey("5,0");
+        var action = manifest.Actions["5,0"];
+        action.UUID.Should().Be("com.wtdeck.streamdock.flight-alerts");
+        action.Name.Should().Be("Flight Alerts");
+        action.Controller.Should().Be("Information");
+        action.States.Should().HaveCount(1);
+        action.States[0].Image.Should().Be("assets/flight-alerts-panel");
+        action.States[0].ShowTitle.Should().BeFalse();
+    }
+
+    [Fact]
     public void Profile_and_action_ids_are_deterministic()
     {
         var (p1, page1, m1) = _builder.Build(_options);
@@ -49,6 +81,8 @@ public class ProfileManifestBuilderTests
         p1.Should().Be(p2);
         page1.Should().Be(page2);
         m1.Actions["0,0"].ActionID.Should().Be(m2.Actions["0,0"].ActionID);
+        m1.Actions["0,4"].ActionID.Should().Be(m2.Actions["0,4"].ActionID);
+        m1.Actions["5,0"].ActionID.Should().Be(m2.Actions["5,0"].ActionID);
     }
 
     [Fact]

@@ -80,6 +80,9 @@ public sealed record FlightSnapshot
     public float GMeterMax { get; init; }
     public float AoaIndicator { get; init; }
 
+    /// <summary>Explicit flare count from clear telemetry fields; null when unavailable.</summary>
+    public int? FlaresRemaining { get; init; }
+
     // ---------------- Long tail ----------------
     public IReadOnlyDictionary<string, float> RawState { get; init; } =
         new Dictionary<string, float>();
@@ -112,12 +115,14 @@ public sealed record FlightSnapshot
                && IndicatedAirspeedKmh.Equals(other.IndicatedAirspeedKmh)
                && MachNumber.Equals(other.MachNumber)
                && AoaDeg.Equals(other.AoaDeg)
+               && LoadFactorNy.Equals(other.LoadFactorNy)
                && GearPercent.Equals(other.GearPercent)
                && FlapsPercent.Equals(other.FlapsPercent)
                && AirbrakePercent.Equals(other.AirbrakePercent)
                && FuelMassKg.Equals(other.FuelMassKg)
                && GearsCommand.Equals(other.GearsCommand)
-               && GearsLamp.Equals(other.GearsLamp);
+               && GearsLamp.Equals(other.GearsLamp)
+               && FlaresRemaining == other.FlaresRemaining;
         // Intentionally does not compare RawState / RawIndicators dictionaries -
         // that would be O(n) per tick. The fields above are the ones that drive
         // rule decisions; if two snapshots agree on them we treat them as equal
@@ -135,6 +140,8 @@ public sealed record FlightSnapshot
         hash.Add(IndicatedAirspeedKmh);
         hash.Add(MachNumber);
         hash.Add(AoaDeg);
+        hash.Add(LoadFactorNy);
+        hash.Add(FlaresRemaining);
         return hash.ToHashCode();
     }
 }

@@ -4,25 +4,55 @@
 
 - **HTTP REST API** on `http://127.0.0.1:8730` (loopback only)
 - Plugin polls the app for state; app exposes endpoints for commands and heartbeats
-- Current protocol version: **2**
+- Current protocol version: **4**
 
 ## Endpoints
 
 ### GET /api/stream-dock/state
 
-Returns the current button state snapshot. Called by the plugin every 500ms.
+Returns the current button and alert-panel state snapshot. Button contexts poll every 500ms; the information panel polls every 100ms.
 
 **Response 200**:
 ```json
 {
-  "protocolVersion": 2,
+  "protocolVersion": 4,
   "appVersion": "0.1.0",
   "timestamp": "2026-04-04T12:00:00Z",
   "state": {
     "gearStatus": "down",
     "gearTitle": "GEAR DOWN",
     "gearBlinking": true,
-    "gearAlertLevel": "Info"
+    "gearAlertLevel": "Info",
+    "actions": {
+      "landing-gear": {
+        "statusKey": "down",
+        "title": "GEAR DOWN",
+        "isBlinking": true,
+        "isEnabled": true,
+        "alertLevel": "Info"
+      },
+      "launch-flares": {
+        "statusKey": "ready",
+        "title": "FLARES\n42",
+        "isBlinking": false,
+        "isEnabled": true,
+        "alertLevel": "None"
+      }
+    },
+    "alerts": {
+      "over-g": {
+        "label": "G",
+        "value": "10.0",
+        "statusKey": "warning",
+        "alertLevel": "Warning",
+        "isAvailable": true,
+        "numericValue": 10.0
+      }
+    },
+    "panel": {
+      "statusKey": "warning",
+      "isAvailable": true
+    }
   }
 }
 ```
@@ -30,6 +60,10 @@ Returns the current button state snapshot. Called by the plugin every 500ms.
 **gearStatus values**: `up`, `down`, `extending`, `retracting`, `danger`, `unavailable`, `unknown`
 
 **gearAlertLevel values**: `None`, `Info`, `Warning`, `Danger`
+
+**alert status values**: `normal`, `warning`, `danger`, `unavailable`
+
+The initial panel alert is `over-g`. It uses positive `/state` `Ny` only; negative G is displayed as `0.0` and evaluated as normal. Missing or invalid telemetry returns `panel.isAvailable = false` and an unavailable `over-g` alert.
 
 ### POST /api/actions/{actionKey}
 
@@ -44,6 +78,9 @@ Triggers an action. The plugin calls this on button press.
 
 **Known action keys**:
 - `landing-gear`
+- `launch-flares`
+
+The `flight-alerts` StreamDock action is an `Information` controller and does not POST commands.
 
 ### PUT /api/stream-controller/status
 
@@ -66,7 +103,7 @@ Diagnostic endpoint.
 ```json
 {
   "status": "ok",
-  "protocolVersion": 2,
+  "protocolVersion": 4,
   "lastClientStatus": "connected",
   "lastHeartbeat": "2026-04-04T12:00:00Z"
 }

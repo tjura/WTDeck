@@ -9,13 +9,16 @@ public sealed class ProfileManifestBuilder
     private const string PageUuidNamespace = "wtdeck-page";
 
     /// <summary>
-    /// Builds the WTDeck profile manifest with a single landing gear button at (0,0).
+    /// Builds the WTDeck profile manifest with landing gear at (0,0), flares at (0,4),
+    /// and the read-only flight alert panel on the device information controller.
     /// </summary>
     public (string ProfileUuid, string PageUuid, ProfileManifest Manifest) Build(StreamDockOptions options)
     {
         var profileUuid = DeterministicUuid.Create(ProfileUuidNamespace, options.ProfileName).ToString("D").ToUpperInvariant();
         var pageUuid = DeterministicUuid.Create(PageUuidNamespace, options.ProfileName + ":page0").ToString("D").ToUpperInvariant();
         var gearActionId = DeterministicUuid.Create(UuidNamespace, options.ProfileName + ":landing-gear:0,0").ToString("D").ToUpperInvariant();
+        var flaresActionId = DeterministicUuid.Create(UuidNamespace, options.ProfileName + ":launch-flares:0,4").ToString("D").ToUpperInvariant();
+        var flightAlertsActionId = DeterministicUuid.Create(UuidNamespace, options.ProfileName + $":flight-alerts:{options.FlightAlertsPanelSlot}").ToString("D").ToUpperInvariant();
 
         var pageFileName = $"{pageUuid}.sdProfile";
 
@@ -48,6 +51,45 @@ public sealed class ProfileManifestBuilder
                             Image = "assets/gear-disabled",
                             Title = "LANDING\nGEAR",
                             FontSize = "14",
+                            TitleAlignment = "middle",
+                            ShowTitle = false
+                        }
+                    ]
+                },
+                ["0,4"] = new ProfileAction
+                {
+                    ActionID = flaresActionId,
+                    UUID = options.PluginFlaresActionUuid,
+                    Name = "Launch Flares",
+                    State = 0,
+                    Settings = [],
+                    States =
+                    [
+                        new ProfileActionState
+                        {
+                            Image = "assets/flare-unknown",
+                            Title = "FLARES",
+                            FontSize = "15",
+                            TitleAlignment = "middle",
+                            ShowTitle = true
+                        }
+                    ]
+                },
+                [options.FlightAlertsPanelSlot] = new ProfileAction
+                {
+                    ActionID = flightAlertsActionId,
+                    Controller = "Information",
+                    UUID = options.PluginFlightAlertsActionUuid,
+                    Name = "Flight Alerts",
+                    State = 0,
+                    Settings = [],
+                    States =
+                    [
+                        new ProfileActionState
+                        {
+                            Image = "assets/flight-alerts-panel",
+                            Title = "",
+                            FontSize = "12",
                             TitleAlignment = "middle",
                             ShowTitle = false
                         }

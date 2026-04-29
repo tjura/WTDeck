@@ -53,8 +53,15 @@
 4. `AppHost` passes the latest snapshot to `CompositeRuleEngine.Evaluate(current, previous)`
 5. Rule engine returns `DeckButtonState` with title, icon key, blink, alert
 6. `DeckButtonStateMapper` maps icon key -> status key (e.g. `gear-deployed` -> `down`)
-7. `AppHost` pushes `ButtonStateUpdate` to `HttpPluginBridge` (in-memory snapshot)
-8. Stream Controller plugin polls `GET /api/stream-dock/state` every 500ms and calls `setImage`
+7. `AppHost` pushes `ButtonStateUpdate` plus `StreamDockPanelUpdate` to `HttpPluginBridge` (in-memory snapshot)
+8. Stream Controller plugin polls `GET /api/stream-dock/state`; buttons refresh every 500ms and the information panel refreshes every 100ms
+9. The plugin calls `setImage` for button assets or a generated canvas image for the flight-alert panel
+
+### Telemetry -> Flight Alert Panel
+1. `FlightAlertPanelEvaluator` reads the current snapshot and aircraft profile
+2. The `over-g` alert clamps `/state` `Ny` to positive values only
+3. A-4N thresholds are `10.0G` warning and `11.0G` danger
+4. Missing or invalid telemetry publishes an unavailable panel with dim alert state
 
 ### Button Press -> Keyboard Input (write path)
 1. User presses button on Stream Controller

@@ -21,6 +21,10 @@
     <EmbeddedResource Include="..\WTDeck.Plugin\assets\gear-disabled.svg" LogicalName="WTDeck.Plugin.assets.gear-disabled.svg" />
     <EmbeddedResource Include="..\WTDeck.Plugin\assets\gear-unknown.svg" LogicalName="WTDeck.Plugin.assets.gear-unknown.svg" />
     <EmbeddedResource Include="..\WTDeck.Plugin\assets\gear-blink-off.svg" LogicalName="WTDeck.Plugin.assets.gear-blink-off.svg" />
+    <EmbeddedResource Include="..\WTDeck.Plugin\assets\flare-ready.svg" LogicalName="WTDeck.Plugin.assets.flare-ready.svg" />
+    <EmbeddedResource Include="..\WTDeck.Plugin\assets\flare-unavailable.svg" LogicalName="WTDeck.Plugin.assets.flare-unavailable.svg" />
+    <EmbeddedResource Include="..\WTDeck.Plugin\assets\flare-unknown.svg" LogicalName="WTDeck.Plugin.assets.flare-unknown.svg" />
+    <EmbeddedResource Include="..\WTDeck.Plugin\assets\flight-alerts-panel.svg" LogicalName="WTDeck.Plugin.assets.flight-alerts-panel.svg" />
     <EmbeddedResource Include="..\WTDeck.Plugin\assets\plugin-icon.svg" LogicalName="WTDeck.Plugin.assets.plugin-icon.svg" />
     <EmbeddedResource Include="..\WTDeck.Plugin\assets\category-icon.svg" LogicalName="WTDeck.Plugin.assets.category-icon.svg" />
   </ItemGroup>

@@ -43,6 +43,10 @@ public sealed class ProfileAction
     [JsonPropertyName("ActionID")]
     public string ActionID { get; set; } = "";
 
+    [JsonPropertyName("Controller")]
+    [JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingNull)]
+    public string? Controller { get; set; }
+
     [JsonPropertyName("UUID")]
     public string UUID { get; set; } = "";
 

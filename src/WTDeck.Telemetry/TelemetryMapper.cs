@@ -88,6 +88,7 @@ internal static class TelemetryMapper
             GMeterMin = indicators?.GMeterMin ?? 0f,
             GMeterMax = indicators?.GMeterMax ?? 0f,
             AoaIndicator = indicators?.AoaIndicator ?? 0f,
+            FlaresRemaining = ExtractExplicitFlareCount(rawIndicators) ?? ExtractExplicitFlareCount(rawState),
 
             RawState = rawState,
             RawIndicators = rawIndicators,
@@ -122,13 +123,24 @@ internal static class TelemetryMapper
 
     private static Dictionary<string, float> FlattenNumeric(Dictionary<string, JsonElement> extra)
     {
-        var result = new Dictionary<string, float>(extra.Count, StringComparer.Ordinal);
+        var result = new Dictionary<string, float>(extra.Count, StringComparer.OrdinalIgnoreCase);
         foreach (var (key, value) in extra)
         {
             if (value.ValueKind == JsonValueKind.Number && value.TryGetSingle(out var f))
                 result[key] = f;
         }
         return result;
+    }
+
+    private static int? ExtractExplicitFlareCount(IReadOnlyDictionary<string, float> raw)
+    {
+        foreach (var key in new[] { "flares", "flare", "countermeasures_flares", "countermeasure_flares" })
+        {
+            if (raw.TryGetValue(key, out var value))
+                return Math.Max(0, (int)MathF.Round(value));
+        }
+
+        return null;
     }
 
     /// <summary>

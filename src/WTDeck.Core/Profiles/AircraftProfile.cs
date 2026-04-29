@@ -16,9 +16,13 @@ public sealed record AircraftProfile(
     float VneIasKmh,
     float VneMach,
     float MaxPositiveG,
+    float OverGWarningThreshold,
+    float OverGDangerThreshold,
     float MaxNegativeG,
     float CriticalAoADeg,
-    float AirbrakeOperatingSpeedKmh)
+    float AirbrakeOperatingSpeedKmh,
+    bool HasFlares,
+    int? DefaultFlares)
 {
     /// <summary>
     /// Fallback profile for unknown aircraft. Values are intentionally high so
@@ -33,7 +37,11 @@ public sealed record AircraftProfile(
         VneIasKmh: 9999f,
         VneMach: 9.99f,
         MaxPositiveG: 99f,
+        OverGWarningThreshold: 99f,
+        OverGDangerThreshold: 999f,
         MaxNegativeG: -99f,
         CriticalAoADeg: 90f,
-        AirbrakeOperatingSpeedKmh: 9999f);
+        AirbrakeOperatingSpeedKmh: 9999f,
+        HasFlares: false,
+        DefaultFlares: null);
 }

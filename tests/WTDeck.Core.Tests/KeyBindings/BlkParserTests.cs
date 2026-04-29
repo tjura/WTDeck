@@ -50,6 +50,44 @@ public class BlkParserTests
     }
 
     [Fact]
+    public void Parses_flare_only_binding()
+    {
+        var blk = """
+            controls{
+              hotkeys{
+                ID_COUNTERMEASURES_FLARES{
+                  keyboardKey:i=45
+                }
+              }
+            }
+            """;
+
+        var result = BlkParser.Parse(new StringReader(blk));
+
+        result.Should().ContainKey("ID_COUNTERMEASURES_FLARES");
+        result["ID_COUNTERMEASURES_FLARES"].ActionId.Should().Be(ActionId.LaunchFlares);
+        result["ID_COUNTERMEASURES_FLARES"].Chords[0].ScanCodes.Should().Equal(45);
+    }
+
+    [Fact]
+    public void Does_not_treat_selected_countermeasure_binding_as_flare_only()
+    {
+        var blk = """
+            controls{
+              hotkeys{
+                ID_FLARES{
+                  keyboardKey:i=45
+                }
+              }
+            }
+            """;
+
+        var result = BlkParser.Parse(new StringReader(blk));
+
+        result["ID_FLARES"].ActionId.Should().Be(ActionId.Unknown);
+    }
+
+    [Fact]
     public void Duplicate_action_blocks_produce_alternative_chords()
     {
         var blk = """

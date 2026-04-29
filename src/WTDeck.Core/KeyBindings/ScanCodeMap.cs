@@ -27,6 +27,8 @@ public static class ScanCodeMap
         [23] = "I",
         [24] = "O",
         [25] = "P",
+        [26] = "[",
+        [27] = "]",
         [28] = "Enter",
         [29] = "LCtrl",
         [30] = "A",

@@ -38,10 +38,14 @@ public class AircraftProfileRegistryTests
     }
 
     [Fact]
-    public void A4N_only_overrides_gear_operating_speed()
+    public void A4N_reports_flare_capability()
     {
         var a4n = A4NSkyhawkProfile.Instance;
         a4n.GearOperatingSpeedKmh.Should().Be(450f);
+        a4n.OverGWarningThreshold.Should().Be(10f);
+        a4n.OverGDangerThreshold.Should().Be(11f);
+        a4n.HasFlares.Should().BeTrue();
+        a4n.DefaultFlares.Should().Be(60);
         // All other limits should match Generic until real values are added
         a4n.FlapsOperatingSpeedKmh.Should().Be(AircraftProfile.Generic.FlapsOperatingSpeedKmh);
         a4n.VneIasKmh.Should().Be(AircraftProfile.Generic.VneIasKmh);

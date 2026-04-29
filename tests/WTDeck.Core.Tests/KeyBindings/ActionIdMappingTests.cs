@@ -8,6 +8,7 @@ public class ActionIdMappingTests
 {
     [Theory]
     [InlineData("ID_GEAR", ActionId.Gear)]
+    [InlineData("ID_COUNTERMEASURES_FLARES", ActionId.LaunchFlares)]
     [InlineData("ID_FLAPS", ActionId.Flaps)]
     [InlineData("ID_AIR_BRAKE", ActionId.AirBrake)]
     [InlineData("ID_BOMBS", ActionId.Bombs)]

@@ -2,10 +2,10 @@
  * WTDeck StreamDock plugin - SDK v1
  *
  * Thin transport layer:
- *   - polls http://127.0.0.1:8730/api/stream-dock/state every 500ms
- *   - POSTs /api/actions/landing-gear on button press
+ *   - polls button state every 500ms and the information panel every 100ms
+ *   - POSTs /api/actions/{actionKey} on button press
  *   - PUTs /api/stream-controller/status heartbeat every 2s
- *   - blinks the button every 500ms when gearBlinking is true
+ *   - blinks buttons when the backend marks the action as blinking
  *
  * All business logic lives in WTDeck.App (.NET). This plugin only renders state.
  */
@@ -13,29 +13,57 @@
 "use strict";
 
 const API_BASE = "http://127.0.0.1:8730";
-const POLL_INTERVAL_MS = 500;
+const BUTTON_POLL_INTERVAL_MS = 500;
+const PANEL_POLL_INTERVAL_MS = 100;
 const HEARTBEAT_INTERVAL_MS = 2000;
 const BLINK_INTERVAL_MS = 500;
-const GEAR_ACTION_UUID = "com.wtdeck.streamdock.gear";
-const GEAR_ACTION_KEY = "landing-gear";
 const BLINK_OFF_ASSET = "gear-blink-off.svg";
+const PANEL_WIDTH = 192;
+const PANEL_HEIGHT = 384;
 
-// Map status keys from the backend to local asset filenames
-const STATUS_TO_ASSET = {
-    up: "gear-retracted.svg",
-    down: "gear-deployed.svg",
-    extending: "gear-deploying.svg",
-    retracting: "gear-retracting.svg",
-    danger: "gear-damaged.svg",
-    unavailable: "gear-disabled.svg",
-    unknown: "gear-unknown.svg",
+const ACTIONS = {
+    "com.wtdeck.streamdock.gear": {
+        actionKey: "landing-gear",
+        setTitle: false,
+        fallbackTitle: "",
+        statusToAsset: {
+            up: "gear-retracted.svg",
+            down: "gear-deployed.svg",
+            extending: "gear-deploying.svg",
+            retracting: "gear-retracting.svg",
+            danger: "gear-damaged.svg",
+            unavailable: "gear-disabled.svg",
+            unknown: "gear-unknown.svg",
+        },
+    },
+    "com.wtdeck.streamdock.flares": {
+        actionKey: "launch-flares",
+        setTitle: true,
+        fallbackTitle: "NO FLARES",
+        statusToAsset: {
+            ready: "flare-ready.svg",
+            unavailable: "flare-unavailable.svg",
+            unknown: "flare-unknown.svg",
+        },
+    },
+    "com.wtdeck.streamdock.flight-alerts": {
+        actionKey: "flight-alerts",
+        panel: true,
+        setTitle: false,
+        fallbackTitle: "",
+        statusToAsset: {
+            unavailable: "flight-alerts-panel.svg",
+            unknown: "flight-alerts-panel.svg",
+        },
+    },
 };
 
 let websocket = null;
 let pluginUUID = null;
 const contexts = new Map(); // context -> per-context state
 const assetCache = new Map(); // assetName -> dataUrl
-let pollId = null;
+let buttonPollId = null;
+let panelPollId = null;
 let heartbeatId = null;
 let pollInFlight = false;
 let heartbeatInFlight = false;
@@ -75,45 +103,56 @@ function handleMessage(message) {
 
     if (!event) return;
 
-    if (event === "willAppear" && action === GEAR_ACTION_UUID) {
-        startContext(context);
-    } else if (event === "willDisappear" && action === GEAR_ACTION_UUID) {
+    const actionDefinition = ACTIONS[action];
+
+    if (event === "willAppear" && actionDefinition) {
+        startContext(context, actionDefinition);
+    } else if (event === "willDisappear" && actionDefinition) {
         stopContext(context);
-    } else if (event === "keyDown" && action === GEAR_ACTION_UUID) {
-        triggerAction(GEAR_ACTION_KEY);
+    } else if (event === "keyDown" && actionDefinition && !actionDefinition.panel) {
+        triggerAction(actionDefinition.actionKey);
     }
 }
 
-function createContextState() {
+function createContextState(actionDefinition) {
     return {
+        actionKey: actionDefinition.actionKey,
+        isPanel: !!actionDefinition.panel,
+        statusToAsset: actionDefinition.statusToAsset,
+        shouldSetTitle: actionDefinition.setTitle,
+        fallbackTitle: actionDefinition.fallbackTitle,
         blinkId: null,
         blinkPhaseOn: true,
         lastStatus: null,
+        lastTitle: null,
         lastBlinking: false,
+        lastPanelSignature: null,
         onImageUrl: null,  // current state's full-color image
         offImageUrl: null, // blink-off image (text only)
     };
 }
 
-function startContext(context) {
+function startContext(context, actionDefinition) {
     if (contexts.has(context)) return;
 
-    const state = createContextState();
+    const state = createContextState(actionDefinition);
     contexts.set(context, state);
 
-    // Preload the blink-off asset (reused across all blinking states)
-    loadAsset(BLINK_OFF_ASSET).then(function (dataUrl) {
-        const s = contexts.get(context);
-        if (s === state) s.offImageUrl = dataUrl;
-    });
+    if (!state.isPanel) {
+        // Preload the blink-off asset (reused across all blinking states)
+        loadAsset(BLINK_OFF_ASSET).then(function (dataUrl) {
+            const s = contexts.get(context);
+            if (s === state) s.offImageUrl = dataUrl;
+        });
+    }
 
     if (lastSnapshot && lastSnapshot.state) {
         applyState(context, lastSnapshot);
     } else {
-        syncAllContexts();
+        syncContexts(state.isPanel ? "panel" : "button");
     }
 
-    ensureTransportLoopsRunning();
+    rebalanceTransportLoops();
 }
 
 function stopContext(context) {
@@ -123,10 +162,7 @@ function stopContext(context) {
     if (state.blinkId) clearInterval(state.blinkId);
     contexts.delete(context);
 
-    if (contexts.size === 0) {
-        stopTransportLoops();
-        sendHeartbeat("disconnected");
-    }
+    rebalanceTransportLoops();
 }
 
 function stopAllContexts() {
@@ -137,25 +173,51 @@ function stopAllContexts() {
     stopTransportLoops();
 }
 
-function ensureTransportLoopsRunning() {
-    if (!pollId) {
-        pollId = setInterval(function () {
-            syncAllContexts();
-        }, POLL_INTERVAL_MS);
+function rebalanceTransportLoops() {
+    if (hasButtonContexts()) {
+        if (!buttonPollId) {
+            buttonPollId = setInterval(function () {
+                syncContexts("button");
+            }, BUTTON_POLL_INTERVAL_MS);
+        }
+    } else if (buttonPollId) {
+        clearInterval(buttonPollId);
+        buttonPollId = null;
     }
 
-    if (!heartbeatId) {
+    if (hasPanelContexts()) {
+        if (!panelPollId) {
+            panelPollId = setInterval(function () {
+                syncContexts("panel");
+            }, PANEL_POLL_INTERVAL_MS);
+        }
+    } else if (panelPollId) {
+        clearInterval(panelPollId);
+        panelPollId = null;
+    }
+
+    if (contexts.size > 0 && !heartbeatId) {
         sendHeartbeat("connected");
         heartbeatId = setInterval(function () {
             sendHeartbeat("connected");
         }, HEARTBEAT_INTERVAL_MS);
     }
+
+    if (contexts.size === 0) {
+        stopTransportLoops();
+        sendHeartbeat("disconnected");
+    }
 }
 
 function stopTransportLoops() {
-    if (pollId) {
-        clearInterval(pollId);
-        pollId = null;
+    if (buttonPollId) {
+        clearInterval(buttonPollId);
+        buttonPollId = null;
+    }
+
+    if (panelPollId) {
+        clearInterval(panelPollId);
+        panelPollId = null;
     }
 
     if (heartbeatId) {
@@ -164,8 +226,35 @@ function stopTransportLoops() {
     }
 }
 
-function syncAllContexts() {
-    if (pollInFlight || contexts.size === 0) return;
+function hasButtonContexts() {
+    let found = false;
+    contexts.forEach(function (state) {
+        if (!state.isPanel) found = true;
+    });
+    return found;
+}
+
+function hasPanelContexts() {
+    let found = false;
+    contexts.forEach(function (state) {
+        if (state.isPanel) found = true;
+    });
+    return found;
+}
+
+function targetContexts(kind) {
+    const targets = [];
+    contexts.forEach(function (state, context) {
+        if ((kind === "panel" && state.isPanel) || (kind === "button" && !state.isPanel)) {
+            targets.push(context);
+        }
+    });
+    return targets;
+}
+
+function syncContexts(kind) {
+    const targets = targetContexts(kind);
+    if (pollInFlight || targets.length === 0) return;
 
     pollInFlight = true;
 
@@ -176,13 +265,13 @@ function syncAllContexts() {
         })
         .then(function (snapshot) {
             lastSnapshot = snapshot;
-            contexts.forEach(function (_, context) {
+            targets.forEach(function (context) {
                 applyState(context, snapshot);
             });
         })
         .catch(function () {
             lastSnapshot = null;
-            contexts.forEach(function (_, context) {
+            targets.forEach(function (context) {
                 applyFallback(context);
             });
         })
@@ -195,14 +284,33 @@ function applyState(context, snapshot) {
     const state = contexts.get(context);
     if (!state || !snapshot || !snapshot.state) return;
 
-    const status = snapshot.state.gearStatus || "unknown";
-    const blinking = !!snapshot.state.gearBlinking;
+    if (state.isPanel) {
+        applyPanelState(context, snapshot);
+        return;
+    }
+
+    const actionState = getActionState(snapshot, state.actionKey);
+    if (!actionState) {
+        applyFallback(context);
+        return;
+    }
+
+    const status = actionState.statusKey || "unknown";
+    const title = typeof actionState.title === "string" ? actionState.title : "";
+    const blinking = !!actionState.isBlinking;
     const statusChanged = status !== state.lastStatus;
+    const displayTitle = status === "unavailable" ? "" : title;
+    const titleChanged = displayTitle !== state.lastTitle;
     const blinkingChanged = blinking !== state.lastBlinking;
+
+    if (titleChanged) {
+        state.lastTitle = displayTitle;
+        if (state.shouldSetTitle) setTitle(context, displayTitle);
+    }
 
     if (statusChanged) {
         state.lastStatus = status;
-        const assetName = STATUS_TO_ASSET[status] || STATUS_TO_ASSET.unknown;
+        const assetName = state.statusToAsset[status] || state.statusToAsset.unknown;
         loadAsset(assetName).then(function (dataUrl) {
             const current = contexts.get(context);
             if (current !== state) return;
@@ -228,6 +336,154 @@ function applyState(context, snapshot) {
             if (state.onImageUrl) setImage(context, state.onImageUrl);
         }
     }
+}
+
+function applyPanelState(context, snapshot) {
+    const state = contexts.get(context);
+    if (!state) return;
+
+    const model = buildPanelModel(snapshot);
+    const signature = JSON.stringify(model);
+    if (signature === state.lastPanelSignature) return;
+
+    state.lastPanelSignature = signature;
+    setImage(context, renderPanel(model));
+}
+
+function buildPanelModel(snapshot) {
+    const root = snapshot && snapshot.state ? snapshot.state : {};
+    const panel = root.panel || {};
+    const alerts = root.alerts || {};
+    const overG = alerts["over-g"] || {};
+    const panelAvailable = panel.isAvailable !== false && overG.isAvailable === true;
+
+    return {
+        available: panelAvailable,
+        statusKey: panelAvailable ? (panel.statusKey || overG.statusKey || "normal") : "unavailable",
+        rows: [
+            {
+                label: typeof overG.label === "string" ? overG.label : "G",
+                value: panelAvailable && typeof overG.value === "string" ? overG.value : "--",
+                statusKey: panelAvailable ? (overG.statusKey || "normal") : "unavailable",
+                active: panelAvailable,
+            },
+            { label: "", value: "--", statusKey: "unavailable", active: false },
+            { label: "", value: "--", statusKey: "unavailable", active: false },
+        ],
+    };
+}
+
+function renderPanel(model) {
+    const canvas = document.createElement("canvas");
+    canvas.width = PANEL_WIDTH;
+    canvas.height = PANEL_HEIGHT;
+    const ctx = canvas.getContext("2d");
+    const colors = panelColors(model.statusKey, model.available);
+
+    ctx.fillStyle = colors.background;
+    ctx.fillRect(0, 0, PANEL_WIDTH, PANEL_HEIGHT);
+
+    const rowHeight = 104;
+    const gap = 12;
+    const startY = 24;
+    for (let i = 0; i < 3; i++) {
+        const row = model.rows[i];
+        const y = startY + i * (rowHeight + gap);
+        const rowColors = panelColors(row.statusKey, model.available && row.active);
+
+        ctx.fillStyle = rowColors.row;
+        roundRect(ctx, 14, y, PANEL_WIDTH - 28, rowHeight, 8);
+        ctx.fill();
+
+        ctx.fillStyle = rowColors.accent;
+        roundRect(ctx, 14, y, 5, rowHeight, 4);
+        ctx.fill();
+
+        ctx.fillStyle = rowColors.label;
+        ctx.font = "700 26px Arial, sans-serif";
+        ctx.textBaseline = "middle";
+        ctx.textAlign = "left";
+        ctx.fillText(row.label, 32, y + rowHeight / 2);
+
+        ctx.fillStyle = rowColors.value;
+        ctx.font = "700 38px Arial, sans-serif";
+        ctx.textAlign = "right";
+        ctx.fillText(row.value, PANEL_WIDTH - 28, y + rowHeight / 2);
+    }
+
+    return canvas.toDataURL("image/png");
+}
+
+function panelColors(statusKey, available) {
+    if (!available) {
+        return {
+            background: "#030405",
+            row: "rgba(72, 80, 88, 0.10)",
+            accent: "rgba(122, 132, 142, 0.12)",
+            label: "rgba(142, 152, 162, 0.24)",
+            value: "rgba(142, 152, 162, 0.20)",
+        };
+    }
+
+    if (statusKey === "danger") {
+        return {
+            background: "#090405",
+            row: "#251012",
+            accent: "#ff4646",
+            label: "#ffc2c2",
+            value: "#ff5b5b",
+        };
+    }
+
+    if (statusKey === "warning") {
+        return {
+            background: "#080706",
+            row: "#241c0b",
+            accent: "#ffd166",
+            label: "#ffe5a6",
+            value: "#ffd166",
+        };
+    }
+
+    return {
+        background: "#040707",
+        row: "#0e1716",
+        accent: "#5ee6a8",
+        label: "#b9ddd0",
+        value: "#6ee7b7",
+    };
+}
+
+function roundRect(ctx, x, y, width, height, radius) {
+    ctx.beginPath();
+    ctx.moveTo(x + radius, y);
+    ctx.lineTo(x + width - radius, y);
+    ctx.quadraticCurveTo(x + width, y, x + width, y + radius);
+    ctx.lineTo(x + width, y + height - radius);
+    ctx.quadraticCurveTo(x + width, y + height, x + width - radius, y + height);
+    ctx.lineTo(x + radius, y + height);
+    ctx.quadraticCurveTo(x, y + height, x, y + height - radius);
+    ctx.lineTo(x, y + radius);
+    ctx.quadraticCurveTo(x, y, x + radius, y);
+    ctx.closePath();
+}
+
+function getActionState(snapshot, actionKey) {
+    if (snapshot.state.actions && snapshot.state.actions[actionKey]) {
+        return snapshot.state.actions[actionKey];
+    }
+
+    if (actionKey === "landing-gear") {
+        return {
+            statusKey: snapshot.state.gearStatus,
+            title: snapshot.state.gearTitle,
+            isBlinking: snapshot.state.gearBlinking,
+            isEnabled: true,
+            alertLevel: snapshot.state.gearAlertLevel,
+        };
+    }
+
+    return null;
 }
 
 function startBlink(context) {
@@ -259,9 +515,17 @@ function applyFallback(context) {
     const state = contexts.get(context);
     if (!state) return;
 
+    if (state.isPanel) {
+        const model = buildPanelModel(null);
+        state.lastPanelSignature = JSON.stringify(model);
+        setImage(context, renderPanel(model));
+        return;
+    }
+
     if (state.lastStatus !== "unavailable") {
         state.lastStatus = "unavailable";
-        loadAsset(STATUS_TO_ASSET.unavailable).then(function (dataUrl) {
+        const assetName = state.statusToAsset.unavailable || state.statusToAsset.unknown;
+        loadAsset(assetName).then(function (dataUrl) {
             const current = contexts.get(context);
             if (current === state) {
                 current.onImageUrl = dataUrl;
@@ -269,10 +533,27 @@ function applyFallback(context) {
             }
         });
     }
+    if (state.shouldSetTitle && state.lastTitle !== state.fallbackTitle) {
+        state.lastTitle = state.fallbackTitle;
+        setTitle(context, state.fallbackTitle);
+    }
     if (state.lastBlinking) {
         state.lastBlinking = false;
         stopBlink(context);
     }
+}
+
+function setTitle(context, title) {
+    if (!websocket || websocket.readyState !== 1) return;
+    websocket.send(JSON.stringify({
+        event: "setTitle",
+        context: context,
+        payload: {
+            title: title,
+            target: 0,
+            state: 0,
+        },
+    }));
 }
 
 function loadAsset(name) {

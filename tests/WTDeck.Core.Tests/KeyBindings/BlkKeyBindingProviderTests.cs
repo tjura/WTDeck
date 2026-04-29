@@ -18,6 +18,17 @@ public class BlkKeyBindingProviderTests
     }
 
     [Fact]
+    public void Provides_default_launch_flares_binding_when_file_is_empty()
+    {
+        var provider = BlkKeyBindingProvider.FromReader(new StringReader(""));
+
+        var binding = provider.GetBinding(ActionId.LaunchFlares);
+        binding.Should().NotBeNull();
+        binding!.Chords.Should().HaveCount(1);
+        binding.Chords[0].ScanCodes.Should().Equal(45); // X key default
+    }
+
+    [Fact]
     public void Overrides_default_when_binding_found_in_file()
     {
         var blk = """
@@ -49,11 +60,14 @@ public class BlkKeyBindingProviderTests
                 ID_BOMBS{
                   keyboardKey:i=57
                 }
+                ID_COUNTERMEASURES_FLARES{
+                  keyboardKey:i=45
+                }
               }
             }
             """;
 
         var provider = BlkKeyBindingProvider.FromReader(new StringReader(blk));
-        provider.GetAllBindings().Should().HaveCountGreaterOrEqualTo(2);
+        provider.GetAllBindings().Should().HaveCountGreaterOrEqualTo(3);
     }
 }

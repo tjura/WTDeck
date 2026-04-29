@@ -23,6 +23,9 @@
     "ProfileName": "WTDeck",
     "PluginUuid": "com.wtdeck.streamdock",
     "PluginActionUuid": "com.wtdeck.streamdock.gear",
+    "PluginFlaresActionUuid": "com.wtdeck.streamdock.flares",
+    "PluginFlightAlertsActionUuid": "com.wtdeck.streamdock.flight-alerts",
+    "FlightAlertsPanelSlot": "5,0",
     "UserDataRoot": null,
     "InstallDir": null
   }
@@ -48,6 +51,9 @@
 - `ProfileName`: the dedicated profile name. Does not overwrite your existing profiles.
 - `PluginUuid`: the plugin package UUID (installed at `%APPDATA%\HotSpot\StreamDock\plugins\{uuid}.sdPlugin\`)
 - `PluginActionUuid`: the action UUID used by the generated profile
+- `PluginFlaresActionUuid`: action UUID for the flares button
+- `PluginFlightAlertsActionUuid`: action UUID for the information-panel flight alerts view
+- `FlightAlertsPanelSlot`: generated profile slot for the information controller action
 - `UserDataRoot`: optional override for `%APPDATA%\HotSpot\StreamDock`
 - `InstallDir`: optional override for the Stream Controller install directory
 

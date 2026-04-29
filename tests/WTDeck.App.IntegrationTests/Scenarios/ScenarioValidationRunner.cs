@@ -3,6 +3,7 @@ using Microsoft.Extensions.Logging.Abstractions;
 using WTDeck.App.Debug;
 using WTDeck.Core.Alerts;
 using WTDeck.Core.Contracts;
+using WTDeck.Core.FlightAlerts;
 using WTDeck.Core.Interfaces;
 using WTDeck.Core.KeyBindings;
 using WTDeck.Core.Mapping;
@@ -10,6 +11,7 @@ using WTDeck.Core.Models;
 using WTDeck.Core.Profiles;
 using WTDeck.Core.Profiles.Aircraft;
 using WTDeck.Core.Rules;
+using WTDeck.Core.Rules.Flares;
 using WTDeck.Core.Rules.Gear;
 using WTDeck.Input.Windows;
 using WTDeck.Telemetry;
@@ -29,8 +31,9 @@ internal static class ScenarioValidationRunner
         var bindings = new AlertActionBindingRegistry();
         var alerts = new AlertCenter(bindings);
         var profiles = new AircraftProfileRegistry([A4NSkyhawkProfile.Instance]);
-        var rules = new IRule[] { new GearButtonRule(), new GearOverspeedRule() };
+        var rules = new IRule[] { new GearButtonRule(), new FlaresButtonRule(), new GearOverspeedRule() };
         var engine = new CompositeRuleEngine(rules, profiles, alerts, bindings, TimeProvider.System);
+        var panelEvaluator = new FlightAlertPanelEvaluator();
 
         FlightSnapshot? previous = null;
 
@@ -44,13 +47,16 @@ internal static class ScenarioValidationRunner
 
             var evaluation = engine.Evaluate(snapshot, previous);
             await PushUpdatesAsync(bridge, evaluation.ButtonStates);
+            await PushPanelAsync(bridge, panelEvaluator, profiles, snapshot);
             ValidateUi(step, bridge);
+            ValidatePanel(step, bridge);
 
             foreach (var command in step.Commands)
             {
                 SimulateButtonPress(command, alerts, bindingProvider, keyboardSender);
                 var commandEvaluation = engine.Evaluate(snapshot, snapshot);
                 await PushUpdatesAsync(bridge, commandEvaluation.ButtonStates);
+                await PushPanelAsync(bridge, panelEvaluator, profiles, snapshot);
                 ValidateCommand(step, command, bridge, keyboardSender);
             }
 
@@ -87,6 +93,12 @@ internal static class ScenarioValidationRunner
 
         if (expectation.IndicatedAirspeedKmh.HasValue)
             (snapshot?.IndicatedAirspeedKmh ?? 0f).Should().BeApproximately(expectation.IndicatedAirspeedKmh.Value, 0.01f, $"step '{step.Name}' IAS should match");
+
+        if (expectation.LoadFactorNy.HasValue)
+            (snapshot?.LoadFactorNy ?? 0f).Should().BeApproximately(expectation.LoadFactorNy.Value, 0.01f, $"step '{step.Name}' Ny should match");
+
+        if (expectation.FlaresRemaining.HasValue)
+            snapshot?.FlaresRemaining.Should().Be(expectation.FlaresRemaining.Value, $"step '{step.Name}' flare count should match");
     }
 
     private static void ValidateUi(TelemetryScenarioStep step, RecordingPluginBridge bridge)
@@ -97,6 +109,15 @@ internal static class ScenarioValidationRunner
         bridge.TryGetLatestState(step.ExpectUi.ActionKey, out var update).Should().BeTrue($"step '{step.Name}' should publish UI state");
         update.Should().NotBeNull();
         ValidateUiExpectation(step.ExpectUi, update!, $"step '{step.Name}'");
+    }
+
+    private static void ValidatePanel(TelemetryScenarioStep step, RecordingPluginBridge bridge)
+    {
+        if (step.ExpectPanel is null)
+            return;
+
+        var update = bridge.LatestPanelState;
+        ValidatePanelExpectation(step.ExpectPanel, update, $"step '{step.Name}'");
     }
 
     private static void ValidateCommand(
@@ -139,6 +160,39 @@ internal static class ScenarioValidationRunner
             update.AlertLevel.Should().Be(expectation.AlertLevel, because);
     }
 
+    private static void ValidatePanelExpectation(TelemetryScenarioPanelExpectation expectation, StreamDockPanelUpdate update, string because)
+    {
+        if (expectation.StatusKey is not null)
+            update.Panel.StatusKey.Should().Be(expectation.StatusKey, because);
+
+        if (expectation.IsAvailable.HasValue)
+            update.Panel.IsAvailable.Should().Be(expectation.IsAvailable.Value, because);
+
+        foreach (var (key, alertExpectation) in expectation.Alerts)
+        {
+            update.Alerts.Should().ContainKey(key, because);
+            var alert = update.Alerts[key];
+
+            if (alertExpectation.Label is not null)
+                alert.Label.Should().Be(alertExpectation.Label, because);
+
+            if (alertExpectation.Value is not null)
+                alert.Value.Should().Be(alertExpectation.Value, because);
+
+            if (alertExpectation.StatusKey is not null)
+                alert.StatusKey.Should().Be(alertExpectation.StatusKey, because);
+
+            if (alertExpectation.AlertLevel is not null)
+                alert.AlertLevel.Should().Be(alertExpectation.AlertLevel, because);
+
+            if (alertExpectation.IsAvailable.HasValue)
+                alert.IsAvailable.Should().Be(alertExpectation.IsAvailable.Value, because);
+
+            if (alertExpectation.NumericValue.HasValue)
+                (alert.NumericValue ?? 0f).Should().BeApproximately(alertExpectation.NumericValue.Value, 0.01f, because);
+        }
+    }
+
     private static async Task PushUpdatesAsync(RecordingPluginBridge bridge, IReadOnlyList<DeckButtonState> buttonStates)
     {
         foreach (var buttonState in buttonStates)
@@ -155,6 +209,17 @@ internal static class ScenarioValidationRunner
 
             await bridge.SendButtonStateAsync(update, CancellationToken.None);
         }
+    }
+
+    private static Task PushPanelAsync(
+        RecordingPluginBridge bridge,
+        FlightAlertPanelEvaluator panelEvaluator,
+        IAircraftProfileRegistry profiles,
+        FlightSnapshot? snapshot)
+    {
+        var profile = profiles.Resolve(snapshot?.AircraftType);
+        var update = panelEvaluator.Evaluate(snapshot, profile);
+        return bridge.SendPanelStateAsync(update, CancellationToken.None);
     }
 
     private static void SimulateButtonPress(

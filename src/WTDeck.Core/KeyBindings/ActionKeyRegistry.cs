@@ -13,6 +13,7 @@ public static class ActionKeyRegistry
     private static readonly Dictionary<string, ActionId> Map = new(StringComparer.OrdinalIgnoreCase)
     {
         ["landing-gear"] = ActionId.Gear,
+        ["launch-flares"] = ActionId.LaunchFlares,
         ["flaps"] = ActionId.Flaps,
         ["airbrake"] = ActionId.AirBrake,
         ["bombs"] = ActionId.Bombs,

@@ -6,6 +6,7 @@ The harness exposes two validation gates:
 
 - `telemetry` gate: confirms WTDeck parsed the current telemetry into the expected internal state
 - `ui` gate: confirms WTDeck published the expected plugin-facing button state
+- `panel` gate: confirms WTDeck published the expected information-panel alert state
 
 ## Modes
 
@@ -40,9 +41,46 @@ What this does:
 - uses deterministic default key bindings for command validation
 - validates telemetry expectations per step
 - validates plugin-facing UI state per step
+- validates plugin-facing alert-panel state per step
 - exits with `0` on success and non-zero on failure
 
 This is the preferred workflow for regression checks before opening a pull request.
+
+### 8111 capture mode
+
+Record compact War Thunder localhost API changes for telemetry discovery:
+
+```powershell
+dotnet run --project .\src\WTDeck.App\WTDeck.App.csproj -- --capture-8111
+```
+
+What this does:
+
+- polls `/indicators`, `/state`, `/hudmsg`, `/gamechat`, `/map_obj.json`, `/map_info.json`, and `/mission.json`
+- defaults to a 500 ms poll interval
+- writes only changed endpoint payloads
+- flushes JSONL segment files every 10 seconds
+- stores output under `tmp/8111-captures/<timestamp>` unless `--capture-output <dir>` is provided
+- does not sync Stream Controller or send keyboard input
+
+While capture is running:
+
+- press `m` when the missile warning/marker is visible
+- press `q` to stop cleanly
+
+Useful options:
+
+```powershell
+dotnet run --project .\src\WTDeck.App\WTDeck.App.csproj -- --capture-8111 --capture-duration 120 --capture-output tmp\8111-captures\missile-test
+```
+
+Analyze an existing capture:
+
+```powershell
+dotnet run --project .\src\WTDeck.App\WTDeck.App.csproj -- --analyze-8111-capture tmp\8111-captures\missile-test
+```
+
+The analyzer writes `analysis.md` and `analysis.json` into the capture directory. It highlights fields/messages near marker events and summarizes `/map_obj.json` object changes.
 
 ## Console output
 
@@ -52,6 +90,7 @@ Main event types:
 
 - `telemetry_state`
 - `ui_state`
+- `panel_state`
 - `gate_result`
 - `command_result`
 - `summary`
@@ -61,6 +100,7 @@ Example:
 ```json
 {"event":"telemetry_state","mode":"scenario","step":1,"name":"gear-up","payload":{"available":true,"valid":true,"aircraftType":"a_4n","gearPercent":0,"gear":0,"gearsCommand":0,"gearsLamp":0,"indicatedAirspeedKmh":300}}
 {"event":"ui_state","mode":"scenario","payload":{"actionKey":"landing-gear","title":"GEAR UP","statusKey":"up","isBlinking":false,"isEnabled":true,"alertLevel":"None"}}
+{"event":"panel_state","mode":"scenario","payload":{"statusKey":"normal","isAvailable":true,"alerts":{"over-g":{"label":"G","value":"1.0","statusKey":"normal","alertLevel":"None","isAvailable":true,"numericValue":1}}}}
 {"event":"gate_result","gate":"telemetry","step":1,"name":"gear-up","passed":true}
 {"event":"gate_result","gate":"ui","step":1,"name":"gear-up","passed":true,"actionKey":"landing-gear"}
 ```
@@ -82,6 +122,7 @@ Each step can include:
 - `state`: emulated `/state` payload
 - `expectTelemetry`: expected parsed state
 - `expectUi`: expected plugin-facing button update
+- `expectPanel`: expected plugin-facing information-panel update
 - `commands`: optional simulated button presses to validate command handling
 
 Supported telemetry expectations:
@@ -94,6 +135,7 @@ Supported telemetry expectations:
 - `gearsCommand`
 - `gearsLamp`
 - `indicatedAirspeedKmh`
+- `loadFactorNy`
 
 Supported UI expectations:
 
@@ -103,6 +145,21 @@ Supported UI expectations:
 - `isBlinking`
 - `isEnabled`
 - `alertLevel`
+
+Supported panel expectations:
+
+- `statusKey`
+- `isAvailable`
+- `alerts`
+
+Each alert expectation can include:
+
+- `label`
+- `value`
+- `statusKey`
+- `alertLevel`
+- `isAvailable`
+- `numericValue`
 
 Command fields:
 
@@ -115,6 +172,7 @@ Checked-in examples live under [`scenarios/`](../scenarios/):
 - [landing-gear-cycle.json](../scenarios/landing-gear-cycle.json)
 - [landing-gear-damaged.json](../scenarios/landing-gear-damaged.json)
 - [landing-gear-retracting.json](../scenarios/landing-gear-retracting.json)
+- [flight-alerts-over-g.json](../scenarios/flight-alerts-over-g.json)
 - [overspeed-clear-retrigger.json](../scenarios/overspeed-clear-retrigger.json)
 - [telemetry-invalid.json](../scenarios/telemetry-invalid.json)
 - [telemetry-unavailable.json](../scenarios/telemetry-unavailable.json)
@@ -130,6 +188,6 @@ Use both gates before publishing app logic changes:
 
 ## Current limitations
 
-- The harness is focused on the landing gear vertical slice today.
+- The harness covers landing gear, flares, and the first flight-alert panel slice.
 - Scenario-mode command validation uses WTDeck default bindings for determinism.
 - There is no dedicated CLI for selecting individual validation gates yet; both run together in emulation mode.

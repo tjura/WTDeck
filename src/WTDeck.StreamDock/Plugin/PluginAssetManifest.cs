@@ -23,6 +23,10 @@ public static class PluginAssetManifest
         ["WTDeck.Plugin.assets.gear-disabled.svg"] = "assets/gear-disabled.svg",
         ["WTDeck.Plugin.assets.gear-unknown.svg"] = "assets/gear-unknown.svg",
         ["WTDeck.Plugin.assets.gear-blink-off.svg"] = "assets/gear-blink-off.svg",
+        ["WTDeck.Plugin.assets.flare-ready.svg"] = "assets/flare-ready.svg",
+        ["WTDeck.Plugin.assets.flare-unavailable.svg"] = "assets/flare-unavailable.svg",
+        ["WTDeck.Plugin.assets.flare-unknown.svg"] = "assets/flare-unknown.svg",
+        ["WTDeck.Plugin.assets.flight-alerts-panel.svg"] = "assets/flight-alerts-panel.svg",
         ["WTDeck.Plugin.assets.plugin-icon.svg"] = "assets/plugin-icon.svg",
         ["WTDeck.Plugin.assets.category-icon.svg"] = "assets/category-icon.svg",
     };
