@@ -6,7 +6,7 @@ The harness exposes two validation gates:
 
 - `telemetry` gate: confirms WTDeck parsed the current telemetry into the expected internal state
 - `ui` gate: confirms WTDeck published the expected plugin-facing button state
-- `panel` gate: confirms WTDeck published the expected information-panel alert state
+- `panel` gate: confirms WTDeck published the expected information-tile alert state
 
 ## Modes
 
@@ -41,7 +41,7 @@ What this does:
 - uses deterministic default key bindings for command validation
 - validates telemetry expectations per step
 - validates plugin-facing UI state per step
-- validates plugin-facing alert-panel state per step
+- validates plugin-facing alert-tile state per step
 - exits with `0` on success and non-zero on failure
 
 This is the preferred workflow for regression checks before opening a pull request.
@@ -122,7 +122,7 @@ Each step can include:
 - `state`: emulated `/state` payload
 - `expectTelemetry`: expected parsed state
 - `expectUi`: expected plugin-facing button update
-- `expectPanel`: expected plugin-facing information-panel update
+- `expectPanel`: expected plugin-facing information-tile update
 - `commands`: optional simulated button presses to validate command handling
 
 Supported telemetry expectations:
@@ -188,6 +188,6 @@ Use both gates before publishing app logic changes:
 
 ## Current limitations
 
-- The harness covers landing gear, flares, and the first flight-alert panel slice.
+- The harness covers landing gear, flares, and the first full-size over-G information tile.
 - Scenario-mode command validation uses WTDeck default bindings for determinism.
 - There is no dedicated CLI for selecting individual validation gates yet; both run together in emulation mode.

@@ -10,7 +10,7 @@
 
 ### GET /api/stream-dock/state
 
-Returns the current button and alert-panel state snapshot. Button contexts poll every 500ms; the information panel polls every 100ms.
+Returns the current button and alert-tile state snapshot. Button contexts poll every 500ms; information tiles poll every 100ms.
 
 **Response 200**:
 ```json
@@ -63,7 +63,7 @@ Returns the current button and alert-panel state snapshot. Button contexts poll 
 
 **alert status values**: `normal`, `warning`, `danger`, `unavailable`
 
-The initial panel alert is `over-g`. It uses positive `/state` `Ny` only; negative G is displayed as `0.0` and evaluated as normal. Missing or invalid telemetry returns `panel.isAvailable = false` and an unavailable `over-g` alert.
+The initial information-tile alert is `over-g`. It renders as one full-size tile in a Stream Controller information-display slot. It uses positive `/state` `Ny` only; negative G is displayed as `0.0` and evaluated as normal. Missing or invalid telemetry returns `panel.isAvailable = false` and an unavailable `over-g` alert.
 
 ### POST /api/actions/{actionKey}
 

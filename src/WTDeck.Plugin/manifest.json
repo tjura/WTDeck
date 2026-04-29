@@ -61,8 +61,8 @@
     },
     {
       "UUID": "com.wtdeck.streamdock.flight-alerts",
-      "Name": "Flight Alerts",
-      "Tooltip": "Shows flight limit alerts on the StreamDock information display",
+      "Name": "Over-G Alert",
+      "Tooltip": "Shows the current positive G load as a full-size information display tile",
       "Icon": "assets/flight-alerts-panel",
       "PropertyInspectorPath": "plugin/property-inspector.html",
       "Controllers": ["Information"],

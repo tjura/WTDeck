@@ -65,7 +65,7 @@ public class ProfileManifestBuilderTests
         manifest.Actions.Should().ContainKey("5,0");
         var action = manifest.Actions["5,0"];
         action.UUID.Should().Be("com.wtdeck.streamdock.flight-alerts");
-        action.Name.Should().Be("Flight Alerts");
+        action.Name.Should().Be("Over-G Alert");
         action.Controller.Should().Be("Information");
         action.States.Should().HaveCount(1);
         action.States[0].Image.Should().Be("assets/flight-alerts-panel");

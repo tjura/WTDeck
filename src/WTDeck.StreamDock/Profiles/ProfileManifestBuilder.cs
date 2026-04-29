@@ -10,7 +10,7 @@ public sealed class ProfileManifestBuilder
 
     /// <summary>
     /// Builds the WTDeck profile manifest with landing gear at (0,0), flares at (0,4),
-    /// and the read-only flight alert panel on the device information controller.
+    /// and a read-only over-G alert tile on the device information controller.
     /// </summary>
     public (string ProfileUuid, string PageUuid, ProfileManifest Manifest) Build(StreamDockOptions options)
     {
@@ -80,7 +80,7 @@ public sealed class ProfileManifestBuilder
                     ActionID = flightAlertsActionId,
                     Controller = "Information",
                     UUID = options.PluginFlightAlertsActionUuid,
-                    Name = "Flight Alerts",
+                    Name = "Over-G Alert",
                     State = 0,
                     Settings = [],
                     States =

@@ -2,7 +2,7 @@
  * WTDeck StreamDock plugin - SDK v1
  *
  * Thin transport layer:
- *   - polls button state every 500ms and the information panel every 100ms
+ *   - polls button state every 500ms and information tiles every 100ms
  *   - POSTs /api/actions/{actionKey} on button press
  *   - PUTs /api/stream-controller/status heartbeat every 2s
  *   - blinks buttons when the backend marks the action as blinking
@@ -18,8 +18,7 @@ const PANEL_POLL_INTERVAL_MS = 100;
 const HEARTBEAT_INTERVAL_MS = 2000;
 const BLINK_INTERVAL_MS = 500;
 const BLINK_OFF_ASSET = "gear-blink-off.svg";
-const PANEL_WIDTH = 192;
-const PANEL_HEIGHT = 384;
+const PANEL_TILE_SIZE = 128;
 
 const ACTIONS = {
     "com.wtdeck.streamdock.gear": {
@@ -359,57 +358,45 @@ function buildPanelModel(snapshot) {
 
     return {
         available: panelAvailable,
-        statusKey: panelAvailable ? (panel.statusKey || overG.statusKey || "normal") : "unavailable",
-        rows: [
-            {
-                label: typeof overG.label === "string" ? overG.label : "G",
-                value: panelAvailable && typeof overG.value === "string" ? overG.value : "--",
-                statusKey: panelAvailable ? (overG.statusKey || "normal") : "unavailable",
-                active: panelAvailable,
-            },
-            { label: "", value: "--", statusKey: "unavailable", active: false },
-            { label: "", value: "--", statusKey: "unavailable", active: false },
-        ],
+        label: typeof overG.label === "string" && overG.label ? overG.label : "G",
+        value: panelAvailable && typeof overG.value === "string" ? overG.value : "--",
+        statusKey: panelAvailable ? (overG.statusKey || panel.statusKey || "normal") : "unavailable",
     };
 }
 
 function renderPanel(model) {
     const canvas = document.createElement("canvas");
-    canvas.width = PANEL_WIDTH;
-    canvas.height = PANEL_HEIGHT;
+    canvas.width = PANEL_TILE_SIZE;
+    canvas.height = PANEL_TILE_SIZE;
     const ctx = canvas.getContext("2d");
     const colors = panelColors(model.statusKey, model.available);
 
     ctx.fillStyle = colors.background;
-    ctx.fillRect(0, 0, PANEL_WIDTH, PANEL_HEIGHT);
+    ctx.fillRect(0, 0, PANEL_TILE_SIZE, PANEL_TILE_SIZE);
 
-    const rowHeight = 104;
-    const gap = 12;
-    const startY = 24;
-    for (let i = 0; i < 3; i++) {
-        const row = model.rows[i];
-        const y = startY + i * (rowHeight + gap);
-        const rowColors = panelColors(row.statusKey, model.available && row.active);
+    ctx.fillStyle = colors.surface;
+    roundRect(ctx, 6, 6, PANEL_TILE_SIZE - 12, PANEL_TILE_SIZE - 12, 8);
+    ctx.fill();
 
-        ctx.fillStyle = rowColors.row;
-        roundRect(ctx, 14, y, PANEL_WIDTH - 28, rowHeight, 8);
-        ctx.fill();
+    ctx.strokeStyle = colors.border;
+    ctx.lineWidth = 2;
+    roundRect(ctx, 6, 6, PANEL_TILE_SIZE - 12, PANEL_TILE_SIZE - 12, 8);
+    ctx.stroke();
 
-        ctx.fillStyle = rowColors.accent;
-        roundRect(ctx, 14, y, 5, rowHeight, 4);
-        ctx.fill();
+    ctx.fillStyle = colors.accent;
+    roundRect(ctx, 14, 14, PANEL_TILE_SIZE - 28, 9, 5);
+    ctx.fill();
 
-        ctx.fillStyle = rowColors.label;
-        ctx.font = "700 26px Arial, sans-serif";
-        ctx.textBaseline = "middle";
-        ctx.textAlign = "left";
-        ctx.fillText(row.label, 32, y + rowHeight / 2);
+    ctx.textBaseline = "middle";
+    ctx.textAlign = "center";
 
-        ctx.fillStyle = rowColors.value;
-        ctx.font = "700 38px Arial, sans-serif";
-        ctx.textAlign = "right";
-        ctx.fillText(row.value, PANEL_WIDTH - 28, y + rowHeight / 2);
-    }
+    ctx.fillStyle = colors.label;
+    ctx.font = "700 30px Arial, sans-serif";
+    ctx.fillText(model.label, PANEL_TILE_SIZE / 2, 47);
+
+    ctx.fillStyle = colors.value;
+    ctx.font = "700 44px Arial, sans-serif";
+    ctx.fillText(model.value, PANEL_TILE_SIZE / 2, 86, PANEL_TILE_SIZE - 20);
 
     return canvas.toDataURL("image/png");
 }
@@ -418,7 +405,8 @@ function panelColors(statusKey, available) {
     if (!available) {
         return {
             background: "#030405",
-            row: "rgba(72, 80, 88, 0.10)",
+            surface: "rgba(72, 80, 88, 0.10)",
+            border: "rgba(122, 132, 142, 0.10)",
             accent: "rgba(122, 132, 142, 0.12)",
             label: "rgba(142, 152, 162, 0.24)",
             value: "rgba(142, 152, 162, 0.20)",
@@ -428,7 +416,8 @@ function panelColors(statusKey, available) {
     if (statusKey === "danger") {
         return {
             background: "#090405",
-            row: "#251012",
+            surface: "#251012",
+            border: "#7a1d20",
             accent: "#ff4646",
             label: "#ffc2c2",
             value: "#ff5b5b",
@@ -438,7 +427,8 @@ function panelColors(statusKey, available) {
     if (statusKey === "warning") {
         return {
             background: "#080706",
-            row: "#241c0b",
+            surface: "#241c0b",
+            border: "#8a6214",
             accent: "#ffd166",
             label: "#ffe5a6",
             value: "#ffd166",
@@ -447,7 +437,8 @@ function panelColors(statusKey, available) {
 
     return {
         background: "#040707",
-        row: "#0e1716",
+        surface: "#0e1716",
+        border: "#1b3b33",
         accent: "#5ee6a8",
         label: "#b9ddd0",
         value: "#6ee7b7",

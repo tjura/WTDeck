@@ -6,7 +6,7 @@ namespace WTDeck.StreamDock.Tests.Plugin;
 public class PluginManifestTests
 {
     [Fact]
-    public void Flight_alerts_action_is_information_only()
+    public void Over_g_action_is_information_only()
     {
         using var document = JsonDocument.Parse(File.ReadAllText(Path.Combine(FindRepoRoot(), "src", "WTDeck.Plugin", "manifest.json")));
         var actions = document.RootElement.GetProperty("Actions").EnumerateArray();
@@ -14,6 +14,7 @@ public class PluginManifestTests
         var action = actions.Single(a => a.GetProperty("UUID").GetString() == "com.wtdeck.streamdock.flight-alerts");
         var controllers = action.GetProperty("Controllers").EnumerateArray().Select(c => c.GetString()).ToList();
 
+        action.GetProperty("Name").GetString().Should().Be("Over-G Alert");
         controllers.Should().Equal("Information");
         action.GetProperty("SupportedInMultiActions").GetBoolean().Should().BeFalse();
         action.GetProperty("UserTitleEnabled").GetBoolean().Should().BeFalse();
@@ -25,10 +26,12 @@ public class PluginManifestTests
         var js = File.ReadAllText(Path.Combine(FindRepoRoot(), "src", "WTDeck.Plugin", "plugin", "index.js"));
 
         js.Should().Contain("PANEL_POLL_INTERVAL_MS = 100");
+        js.Should().Contain("PANEL_TILE_SIZE = 128");
         js.Should().Contain("\"com.wtdeck.streamdock.flight-alerts\"");
         js.Should().Contain("event === \"keyDown\" && actionDefinition && !actionDefinition.panel");
         js.Should().Contain("root.alerts || {}");
         js.Should().Contain("alerts[\"over-g\"] || {}");
+        js.Should().NotContain("rows:");
     }
 
     private static string FindRepoRoot()

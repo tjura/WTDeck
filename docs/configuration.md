@@ -52,7 +52,7 @@
 - `PluginUuid`: the plugin package UUID (installed at `%APPDATA%\HotSpot\StreamDock\plugins\{uuid}.sdPlugin\`)
 - `PluginActionUuid`: the action UUID used by the generated profile
 - `PluginFlaresActionUuid`: action UUID for the flares button
-- `PluginFlightAlertsActionUuid`: action UUID for the information-panel flight alerts view
+- `PluginFlightAlertsActionUuid`: action UUID for the over-G information tile
 - `FlightAlertsPanelSlot`: generated profile slot for the information controller action
 - `UserDataRoot`: optional override for `%APPDATA%\HotSpot\StreamDock`
 - `InstallDir`: optional override for the Stream Controller install directory
