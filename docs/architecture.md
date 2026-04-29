@@ -24,7 +24,7 @@
 | Project | Responsibility |
 |---------|---------------|
 | WTDeck.Core | Domain models, interfaces, rules engine, key binding parser, status mapper |
-| WTDeck.Telemetry | HTTP polling of localhost:8111/indicators |
+| WTDeck.Telemetry | HTTP polling of localhost:8111/indicators and /state |
 | WTDeck.Input.Windows | Win32 SendInput for keyboard emission |
 | WTDeck.Ipc | HTTP REST API bridge (loopback :8730) |
 | WTDeck.StreamDock | Plugin installer, profile builder, process controller |
@@ -47,14 +47,14 @@
 ## Data Flow
 
 ### Telemetry -> Button State (read path)
-1. `TelemetryPollingService` polls `/indicators` every 100ms
-2. `WarThunderTelemetrySource` parses JSON into `FlightState`
-3. Polling service fires `StateChanged` only when state changes
-4. `AppHost` calls `GearRuleEngine.Evaluate(current, previous)`
+1. `TelemetryPollingService` polls the telemetry source every 100ms
+2. `WarThunderTelemetrySource` reads `/indicators` and `/state`, then maps both responses into `FlightSnapshot`
+3. Polling service fires `StateChanged` every tick so alert rules can evaluate continuously
+4. `AppHost` passes the latest snapshot to `CompositeRuleEngine.Evaluate(current, previous)`
 5. Rule engine returns `DeckButtonState` with title, icon key, blink, alert
 6. `DeckButtonStateMapper` maps icon key -> status key (e.g. `gear-deployed` -> `down`)
 7. `AppHost` pushes `ButtonStateUpdate` to `HttpPluginBridge` (in-memory snapshot)
-8. Stream Controller plugin polls `GET /api/stream-dock/state` every 500ms and calls `setImage` + `setTitle`
+8. Stream Controller plugin polls `GET /api/stream-dock/state` every 500ms and calls `setImage`
 
 ### Button Press -> Keyboard Input (write path)
 1. User presses button on Stream Controller

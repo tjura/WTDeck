@@ -74,7 +74,7 @@ Diagnostic endpoint.
 
 ## Plugin Framing
 
-The Stream Controller plugin (`plugin/index.js`) uses the Stream Controller WebSocket SDK for button rendering (`setTitle`, `setImage`) and `fetch()` against this HTTP API for state sync and action triggering. No custom framing - it's a regular HTTP client speaking JSON over loopback.
+The Stream Controller plugin (`plugin/index.js`) uses the Stream Controller WebSocket SDK for button image rendering and `fetch()` against this HTTP API for state sync and action triggering. No custom framing - it's a regular HTTP client speaking JSON over loopback.
 
 ## Versioning
 

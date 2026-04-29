@@ -12,8 +12,8 @@ public class StreamDockStateSnapshotSerializationTests
     {
         var state = new StreamDockState("down", "GEAR DOWN", true, "Info");
         var original = new StreamDockStateSnapshot(
-            ProtocolVersion: 2,
-            AppVersion: "0.1.0",
+            ProtocolVersion: IpcProtocol.Version,
+            AppVersion: IpcProtocol.AppVersion,
             Timestamp: DateTimeOffset.UtcNow,
             State: state);
 

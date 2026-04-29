@@ -15,11 +15,16 @@
   },
   "StreamDock": {
     "SyncOnStartup": true,
+    "AlwaysRestart": true,
+    "ForceOverwriteProfile": true,
     "DeviceUUID": "CN001V3Device",
     "DeviceSerialNumber": "8730DB78224F",
     "DeviceModel": "20GBA9901",
     "ProfileName": "WTDeck",
-    "PluginUuid": "com.wtdeck.streamdock"
+    "PluginUuid": "com.wtdeck.streamdock",
+    "PluginActionUuid": "com.wtdeck.streamdock.gear",
+    "UserDataRoot": null,
+    "InstallDir": null
   }
 }
 ```
@@ -37,9 +42,14 @@
 
 ### StreamDock
 - `SyncOnStartup`: if `true`, install plugin + profile and restart Stream Controller on app start
+- `AlwaysRestart`: if `true`, restart Stream Controller even when synced files were already current
+- `ForceOverwriteProfile`: if `true`, overwrite the generated WTDeck profile when generated content changes
 - `DeviceUUID` / `DeviceSerialNumber` / `DeviceModel`: target device identifiers (must match your physical device)
 - `ProfileName`: the dedicated profile name. Does not overwrite your existing profiles.
 - `PluginUuid`: the plugin package UUID (installed at `%APPDATA%\HotSpot\StreamDock\plugins\{uuid}.sdPlugin\`)
+- `PluginActionUuid`: the action UUID used by the generated profile
+- `UserDataRoot`: optional override for `%APPDATA%\HotSpot\StreamDock`
+- `InstallDir`: optional override for the Stream Controller install directory
 
 ## Auto-Detection
 

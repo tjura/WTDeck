@@ -159,7 +159,7 @@ public sealed class HttpPluginBridge : IPluginBridge, IDisposable
 
         var snapshot = new StreamDockStateSnapshot(
             ProtocolVersion: IpcProtocol.Version,
-            AppVersion: "0.1.0",
+            AppVersion: IpcProtocol.AppVersion,
             Timestamp: DateTimeOffset.UtcNow,
             State: state);
 

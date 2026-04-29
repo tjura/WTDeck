@@ -1,4 +1,3 @@
-using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
 using Microsoft.Extensions.Logging;
@@ -58,16 +57,8 @@ if (runtimeMode.EmulateApi)
 
 var builder = Host.CreateApplicationBuilder(args);
 
-// Configuration - read from appsettings.json sections
-var appOptions = new AppOptions();
-var telemetrySection = builder.Configuration.GetSection("Telemetry");
-appOptions.TelemetryBaseUrl = telemetrySection["BaseUrl"] ?? appOptions.TelemetryBaseUrl;
-if (int.TryParse(telemetrySection["PollIntervalMs"], out var pollMs))
-    appOptions.PollIntervalMs = pollMs;
-var ipcSection = builder.Configuration.GetSection("Ipc");
-if (int.TryParse(ipcSection["Port"], out var httpPort))
-    appOptions.HttpPort = httpPort;
-appOptions.HttpBindAddress = ipcSection["BindAddress"] ?? appOptions.HttpBindAddress;
+var appConfiguration = AppConfigurationLoader.Load(builder.Configuration);
+var appOptions = appConfiguration.AppOptions;
 
 // Auto-detect game folder
 appOptions.GameFolder ??= GameFolderDetector.Detect();
@@ -112,11 +103,7 @@ if (gearBinding is not null)
 }
 
 // Telemetry
-var telemetryOptions = new TelemetryOptions
-{
-    BaseUrl = appOptions.TelemetryBaseUrl,
-    PollIntervalMs = scenario?.StepIntervalMs ?? appOptions.PollIntervalMs
-};
+var telemetryOptions = appConfiguration.BuildRuntimeTelemetryOptions(scenario?.StepIntervalMs);
 
 builder.Services.AddSingleton(runtimeMode);
 builder.Services.AddSingleton<DebugRunState>();
@@ -173,27 +160,13 @@ if (runtimeMode.DisableSideEffects)
 }
 else
 {
-    var httpOptions = new HttpPluginBridgeOptions
-    {
-        Port = appOptions.HttpPort,
-        BindAddress = appOptions.HttpBindAddress
-    };
-    builder.Services.AddSingleton(httpOptions);
+    builder.Services.AddSingleton(appConfiguration.HttpPluginBridgeOptions);
     builder.Services.AddSingleton<HttpPluginBridge>();
     builder.Services.AddSingleton<IPluginBridge>(sp => sp.GetRequiredService<HttpPluginBridge>());
 }
 
 // StreamDock sync service (installs plugin, creates profile, restarts Stream Controller)
-var streamDockOptions = new StreamDockOptions();
-var streamDockSection = builder.Configuration.GetSection("StreamDock");
-if (bool.TryParse(streamDockSection["SyncOnStartup"], out var syncOnStartup))
-    streamDockOptions.SyncOnStartup = syncOnStartup;
-streamDockOptions.DeviceUUID = streamDockSection["DeviceUUID"] ?? streamDockOptions.DeviceUUID;
-streamDockOptions.DeviceSerialNumber = streamDockSection["DeviceSerialNumber"] ?? streamDockOptions.DeviceSerialNumber;
-streamDockOptions.DeviceModel = streamDockSection["DeviceModel"] ?? streamDockOptions.DeviceModel;
-streamDockOptions.ProfileName = streamDockSection["ProfileName"] ?? streamDockOptions.ProfileName;
-streamDockOptions.PluginUuid = streamDockSection["PluginUuid"] ?? streamDockOptions.PluginUuid;
-
+var streamDockOptions = appConfiguration.StreamDockOptions;
 builder.Services.AddSingleton(streamDockOptions);
 builder.Services.AddSingleton(sp => new StreamDockPaths(sp.GetRequiredService<StreamDockOptions>()));
 builder.Services.AddSingleton<PluginAssetInstaller>();

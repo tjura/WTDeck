@@ -31,15 +31,6 @@ public class IpcMessageSerializationTests
     }
 
     [Fact]
-    public void HandshakeMessage_round_trips_through_json()
-    {
-        var original = new HandshakeMessage(1, "0.1.0");
-        var json = JsonSerializer.Serialize(original, Options);
-        var deserialized = JsonSerializer.Deserialize<HandshakeMessage>(json, Options);
-        deserialized.Should().Be(original);
-    }
-
-    [Fact]
     public void Deserialization_tolerates_unknown_fields()
     {
         var json = """{"protocolVersion":1,"actionKey":"landing-gear","extraField":"ignored"}""";
