@@ -5,5 +5,9 @@
   "com.wtdeck.warthunder.gear.toggle": {
     "Name": "Landing Gear",
     "Tooltip": "War Thunder landing gear state and toggle command"
+  },
+  "com.wtdeck.warthunder.airbrake.toggle": {
+    "Name": "Air Brake",
+    "Tooltip": "War Thunder air brake state and toggle command"
   }
 }

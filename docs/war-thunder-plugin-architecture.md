@@ -13,8 +13,9 @@ Key files:
 - `config/actions.json` is the action contract: each action has a Stream Dock UUID, telemetry mapping, thresholds, state labels, and command intent.
 - `plugin/index.html` loads the Stream Dock runtime.
 - `plugin/js/war-thunder-client.js` polls War Thunder at `http://127.0.0.1:8111`.
-- `plugin/js/state-machines.js` turns the landing gear telemetry percentage into
-  cockpit states such as `UP`, `DOWN`, `TRANSIT`, `NO FLIGHT`, or `OFFLINE`.
+- `plugin/js/state-machines.js` turns normalized telemetry percentages into
+  cockpit states such as `UP`, `DOWN`, `OFF`, `ON`, `TRANSIT`, `NO FLIGHT`, or
+  `OFFLINE`.
 - `plugin/js/key-renderer.js` generates per-key SVG images dynamically, so the button face can react every telemetry tick.
 - `plugin/js/action-runtime.js` owns Stream Dock events, context tracking, polling, rendering, and command dispatch.
 - `property-inspector/` lets the user choose command adapter, binding label, companion URL, and telemetry inversion.
@@ -24,8 +25,8 @@ Key files:
 1. Stream Dock loads `plugin/index.html` from `manifest.json`.
 2. `connectElgatoStreamDeckSocket(...)` opens the SDK WebSocket and registers the plugin.
 3. The runtime starts polling War Thunder `/state` and `/indicators`.
-4. Raw telemetry is normalized into a snapshot with `gearPercent` and connection
-   validity fields.
+4. Raw telemetry is normalized into a snapshot with fields such as
+   `gearPercent`, `airbrakePercent`, and connection validity.
 5. Each visible Stream Dock key gets a cockpit model based on its action definition.
 6. The renderer produces a complete SVG key face and sends it through `setImage`.
 7. When a key is pressed, the runtime sends the configured command intent through a command adapter.
@@ -36,16 +37,19 @@ Local verification on this machine showed War Thunder's `/state` response includ
 
 ## Actions
 
-The current live-test manifest exposes only one action:
+The current manifest exposes two cockpit actions:
 
 - `Landing Gear`: reads `/state` field `gear, %`, falls back to `/indicators`
   gear fields, renders `UP`, `DOWN`, `TRANSIT`, `OFFLINE`, or `NO FLIGHT`,
   and sends the configured landing gear binding through the WTDeck companion.
+- `Air Brake`: reads `/state` field `airbrake, %`, falls back to `/indicators`
+  airbrake fields, renders `OFF`, `ON`, `TRANSIT`, `OFFLINE`, or `NO FLIGHT`,
+  and sends the configured air brake binding through the WTDeck companion.
 
-Flaps, airbrake, countermeasures, and status tiles are planned future actions,
-but they should stay out of the local manifest until each action has its own
-telemetry mapping, rendered state model, and live-tested command behavior. This
-keeps live testing focused and avoids polluting the user profile with unfinished
+Flaps, countermeasures, and status tiles are planned future actions, but they
+should stay out of the local manifest until each action has its own telemetry
+mapping, rendered state model, and command behavior ready for live testing. This
+keeps testing focused and avoids polluting the user profile with unfinished
 controls.
 
 ## Telemetry Strategy
@@ -71,6 +75,7 @@ The plugin treats `/state` as primary flight telemetry because it exposes most c
 - `gears_indicator`
 - `gears_lamp`
 - `flaps_indicator`
+- `airbrake_indicator`
 - `airbrake_lever`
 - `mach`
 - `g_meter`
@@ -100,9 +105,10 @@ Stream Dock keyUp   -> companion phase "up"   -> Win32 key up
 ```
 
 The companion resolves the configured binding label, currently `G` for Landing
-Gear, and sends scan-code keyboard events with `SendInput`. The browser plugin
-does not call `showOk` or `showAlert` for normal control presses because those
-overlays break the cockpit-style button experience.
+Gear and `H` for Air Brake, and sends scan-code keyboard events with
+`SendInput`. The browser plugin does not call `showOk` or `showAlert` for
+normal control presses because those overlays break the cockpit-style button
+experience.
 
 The recommended production direction remains a small signed companion executable
 that owns keyboard or virtual-device output. The Stream Dock plugin should stay

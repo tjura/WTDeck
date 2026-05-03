@@ -1,10 +1,10 @@
 <#
 .SYNOPSIS
-Checks War Thunder localhost telemetry for the current Landing Gear action.
+Checks War Thunder localhost telemetry for the current cockpit actions.
 
 .DESCRIPTION
-Calls `/state` and `/indicators`, prints only the connection status and landing
-gear fields used by the plugin, and fails clearly when War Thunder telemetry is
+Calls `/state` and `/indicators`, prints only the connection status and control
+fields used by the plugin, and fails clearly when War Thunder telemetry is
 unavailable.
 #>
 param(
@@ -141,6 +141,9 @@ Write-Host "state gear, %: $(Format-FieldValue (Get-Field -Object $stateResult.B
 Write-Host "indicators gears_indicator: $(Format-FieldValue (Get-Field -Object $indicatorsResult.Body -Name "gears_indicator"))"
 Write-Host "indicators gears: $(Format-FieldValue (Get-Field -Object $indicatorsResult.Body -Name "gears"))"
 Write-Host "indicators gears_lamp: $(Format-FieldValue (Get-Field -Object $indicatorsResult.Body -Name "gears_lamp"))"
+Write-Host "state airbrake, %: $(Format-FieldValue (Get-Field -Object $stateResult.Body -Name "airbrake, %"))"
+Write-Host "indicators airbrake_indicator: $(Format-FieldValue (Get-Field -Object $indicatorsResult.Body -Name "airbrake_indicator"))"
+Write-Host "indicators airbrake_lever: $(Format-FieldValue (Get-Field -Object $indicatorsResult.Body -Name "airbrake_lever"))"
 
 if (-not $stateResult.Ok -or -not $indicatorsResult.Ok) {
     exit 1

@@ -6,9 +6,9 @@ This folder contains the source package for the Stream Dock plugin:
 
 The plugin is browser-runtime based. It connects to Stream Dock through the SDK WebSocket and polls War Thunder's local telemetry server at `http://127.0.0.1:8111`.
 
-Version `0.1.0` exposes only the `Landing Gear` action. New cockpit controls
-should not be added to the manifest until their telemetry, rendering, command
-path, and live-test notes are complete.
+Version `0.1.0` exposes the `Landing Gear` and `Air Brake` actions. New cockpit
+controls should not be added to the manifest until their telemetry, rendering,
+command path, and live-test notes are complete.
 
 ## Layout
 
@@ -56,7 +56,7 @@ The output is `dist/com.wtdeck.warthunder.sdPlugin.zip`, matching the suffix-pre
 
 ## Live-Test Notes
 
-Landing Gear uses the local companion for game input. The plugin sends key down
-on Stream Dock `keyDown` and key up on `keyUp`; the companion translates those
-phases into Win32 `SendInput` scan-code events. See
+Cockpit command actions use the local companion for game input. The plugin sends
+key down on Stream Dock `keyDown` and key up on `keyUp`; the companion
+translates those phases into Win32 `SendInput` scan-code events. See
 `docs/streamdock-input-lessons.md` before adding another command action.

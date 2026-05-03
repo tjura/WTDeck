@@ -1,6 +1,7 @@
 (function () {
   let socket = null;
   let context = null;
+  let actionUuid = null;
   let settings = {};
 
   const adapterInput = document.getElementById("adapter");
@@ -22,6 +23,7 @@
   ) {
     const parsedActionInfo = safeJson(actionInfo) || {};
     context = parsedActionInfo.context;
+    actionUuid = parsedActionInfo.action || null;
     settings = parsedActionInfo.payload && parsedActionInfo.payload.settings
       ? parsedActionInfo.payload.settings
       : {};
@@ -48,8 +50,13 @@
   };
 
   function applySettings() {
+    const actionDefinition = currentActionDefinition();
+    const defaultHotkey = actionDefinition && actionDefinition.command
+      ? actionDefinition.command.defaultHotkeyLabel
+      : "";
     adapterInput.value = normalizeAdapter(settings.commandAdapter);
     hotkeyInput.value = settings.hotkeyLabel || "";
+    hotkeyInput.placeholder = defaultHotkey ? "Default: " + defaultHotkey : "Default action binding";
     companionUrlInput.value = settings.companionUrl || "";
     invertTelemetryInput.checked = Boolean(settings.invertTelemetry);
   }
@@ -94,5 +101,13 @@
       return adapter;
     }
     return "companion-http";
+  }
+
+  function currentActionDefinition() {
+    const config = window.WTDECK_ACTION_CONFIG;
+    if (!config || !config.actions || !actionUuid) {
+      return null;
+    }
+    return config.actions[actionUuid] || null;
   }
 })();

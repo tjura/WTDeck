@@ -37,6 +37,28 @@
           notes:
             "Native Stream Dock hotkey settings do not dispatch for custom code actions; use the local WTDeck companion sender."
         }
+      },
+      "com.wtdeck.warthunder.airbrake.toggle": {
+        id: "airbrake",
+        shortLabel: "AIRBRK",
+        panelLabel: "AIRBRK",
+        kind: "toggle",
+        telemetry: {
+          normalizedField: "airbrakePercent",
+          primaryEndpoint: "state",
+          primaryRawField: "airbrake, %",
+          fallbackEndpoint: "indicators",
+          fallbackRawFields: ["airbrake_indicator", "airbrake_lever"]
+        },
+        thresholds: { offMax: 5, onMin: 95 },
+        states: { off: "OFF", on: "ON", moving: "TRANSIT", unknown: "NO FLIGHT" },
+        command: {
+          intent: "airbrake-toggle",
+          defaultHotkeyLabel: "H",
+          adapter: "companion-http",
+          notes:
+            "Native Stream Dock hotkey settings do not dispatch for custom code actions; use the local WTDeck companion sender."
+        }
       }
     }
   };

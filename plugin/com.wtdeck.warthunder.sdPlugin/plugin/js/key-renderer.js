@@ -11,7 +11,6 @@
     const label = actionDefinition.panelLabel || actionDefinition.shortLabel || "";
     const status = model.statusText || "";
     const percent = typeof model.percent === "number" ? model.percent : null;
-    const switchY = switchPosition(model.statusKey, percent);
 
     const svg = [
       '<svg xmlns="http://www.w3.org/2000/svg" width="144" height="144" viewBox="0 0 144 144">',
@@ -37,7 +36,7 @@
       screw(126, 126),
       '<text x="72" y="27" text-anchor="middle" fill="#d9dde0" font-size="12" font-family="Arial, sans-serif" font-weight="700">' + escapeXml(label) + '</text>',
       renderStateRail(status, palette, model.statusKey),
-      renderSwitch(palette, switchY),
+      renderControl(actionDefinition, palette, model.statusKey, percent),
       '</svg>'
     ].join("");
 
@@ -70,7 +69,14 @@
       .join("");
   }
 
-  function renderSwitch(palette, y) {
+  function renderControl(actionDefinition, palette, statusKey, percent) {
+    if (actionDefinition.id === "airbrake") {
+      return renderAirbrakeControl(palette, controlPosition(statusKey, percent));
+    }
+    return renderGearSwitch(palette, controlPosition(statusKey, percent));
+  }
+
+  function renderGearSwitch(palette, y) {
     return [
       '<rect x="54" y="38" width="70" height="88" rx="5" fill="#080a0b" stroke="#323b42" stroke-width="1"/>',
       '<rect x="72" y="48" width="36" height="72" rx="18" fill="#050607" stroke="#3d454a" stroke-width="1.5"/>',
@@ -80,7 +86,18 @@
     ].join("");
   }
 
-  function switchPosition(statusKey, percent) {
+  function renderAirbrakeControl(palette, y) {
+    return [
+      '<rect x="54" y="38" width="70" height="88" rx="5" fill="#080a0b" stroke="#323b42" stroke-width="1"/>',
+      '<path d="M66 104l48-18M66 88l48-18M66 72l48-18" stroke="' + palette.accent + '" stroke-width="3" stroke-linecap="round" opacity="0.28"/>',
+      '<rect x="62" y="48" width="56" height="72" rx="8" fill="none" stroke="#3d454a" stroke-width="1.5"/>',
+      '<path d="M64 52h52M64 116h52" stroke="#59636b" stroke-width="1"/>',
+      '<rect x="68" y="' + (y - 10) + '" width="44" height="20" rx="5" fill="' + palette.accent + '" filter="url(#glow)"/>',
+      '<path d="M76 ' + y + 'h28" stroke="#f9fbfc" stroke-width="4" stroke-linecap="round" opacity="0.58"/>'
+    ].join("");
+  }
+
+  function controlPosition(statusKey, percent) {
     if (typeof percent === "number") {
       return Math.round(104 - (percent / 100) * 40);
     }

@@ -1,18 +1,19 @@
 # Project Quality Review
 
-This review captures the current baseline after the first successful in-game
-Landing Gear test.
+This review captures the current cockpit-control baseline after the first
+successful Landing Gear test and the Air Brake implementation pass.
 
 ## Current Supported Scope
 
-Version `0.1.0` supports one Stream Dock action:
+Version `0.1.0` supports two Stream Dock actions:
 
 - `Landing Gear`
+- `Air Brake`
 
-It does not currently support flaps, airbrake, countermeasures, flight status
-tiles, installer publishing, or store packaging. Those features should be added
-only after each one has a telemetry contract, rendered state model, command
-adapter behavior, validation coverage, and live in-game test notes.
+It does not currently support flaps, countermeasures, flight status tiles,
+installer publishing, or store packaging. Those features should be added only
+after each one has a telemetry contract, rendered state model, command adapter
+behavior, validation coverage, and live in-game test notes.
 
 ## Companion Decision
 
@@ -53,10 +54,10 @@ The repository has the expected open-source support files:
 
 The plugin baseline is intentionally small:
 
-- one manifest action
-- one localization action entry
-- one telemetry-normalized field, `gearPercent`
-- one command intent, `landing-gear-toggle`
+- two manifest actions
+- two localization action entries
+- two telemetry-normalized fields, `gearPercent` and `airbrakePercent`
+- two command intents, `landing-gear-toggle` and `airbrake-toggle`
 - no static legacy state images
 - no unfinished action entries in the manifest
 

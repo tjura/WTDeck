@@ -96,6 +96,9 @@ Companion request shape:
 
 The matching release event sends `"phase": "up"`.
 
+Air Brake uses the same request shape with `"intent": "airbrake-toggle"` and
+default `"hotkeyLabel": "H"`.
+
 ## Antipatterns
 
 Avoid these mistakes:

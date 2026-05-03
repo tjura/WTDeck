@@ -62,6 +62,11 @@
       indicators.gears,
       indicators.gears_lamp
     ]);
+    const airbrakePercent = firstPercent([
+      state["airbrake, %"],
+      indicators.airbrake_indicator,
+      indicators.airbrake_lever
+    ]);
 
     return {
       connected: raw.connected,
@@ -73,7 +78,8 @@
       errorMessage: raw.error ? raw.error.message : "",
       aircraftType: indicators.type || "",
       army: indicators.army || "",
-      gearPercent: gearPercent
+      gearPercent: gearPercent,
+      airbrakePercent: airbrakePercent
     };
   }
 
@@ -135,9 +141,12 @@
     }
     return [
       state["gear, %"],
+      state["airbrake, %"],
       state["IAS, km/h"],
       state["H, m"],
       indicators.gears_indicator,
+      indicators.airbrake_indicator,
+      indicators.airbrake_lever,
       indicators.type,
       indicators.army
     ].some((value) => value !== null && value !== undefined && value !== "");
