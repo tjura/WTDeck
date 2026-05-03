@@ -26,7 +26,6 @@
         connected: connected,
         statusKey: "unknown",
         statusText: connected ? "NO FLIGHT" : "OFFLINE",
-        valueText: "",
         percent: null,
         tone: "offline"
       };
@@ -45,7 +44,6 @@
       connected: connected,
       statusKey: stateKey,
       statusText: stateText,
-      valueText: percent === null ? "" : Math.round(percent) + "%",
       percent: percent,
       tone: toneForState(stateKey)
     };

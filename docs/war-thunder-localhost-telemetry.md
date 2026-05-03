@@ -246,6 +246,202 @@ The community docs note that ids are cursor-like and may continue across matches
 
 This is not needed for flight telemetry.
 
+## Landing Gear Damage Investigation
+
+Live investigation on 2026-05-03 tested whether War Thunder exposes structured
+landing gear damage or aircraft condition through `localhost:8111`.
+
+Test aircraft/session:
+
+- `/indicators` `type`: `a_4n`
+- `/indicators` `army`: `air`
+- valid flight telemetry throughout the capture
+- landing gear extended during sampling
+
+Endpoints confirmed reachable:
+
+| Endpoint | Result | Notes |
+| --- | --- | --- |
+| `/` | 200 | Browser map UI and JavaScript. |
+| `/state` | 200 | Aircraft state/control telemetry. |
+| `/indicators` | 200 | Cockpit/instrument telemetry. |
+| `/map_info.json` | 200 | Map metadata. |
+| `/map_obj.json` | 200 | Map objects. |
+| `/mission.json` | 200 | Mission status. |
+| `/hudmsg?lastEvt=0&lastDmg=0` | 200 | HUD event and damage message streams. |
+| `/gamechat?lastId=0` | 200 | Chat stream. |
+| `/map.img` | 200 | Map image. |
+
+Additional damage/aircraft-condition endpoint guesses returned no usable
+structured data:
+
+```text
+/damage
+/damage.json
+/damage_model
+/damage_model.json
+/dm
+/dm.json
+/aircraft
+/aircraft.json
+/vehicle
+/vehicle.json
+/cockpit
+/cockpit.json
+/system
+/systems
+/events
+/eventlog
+```
+
+The game browser page itself referenced only the known endpoints:
+
+```text
+/mission.json
+/map_obj.json
+/map_info.json
+/gamechat?lastId=...
+/hudmsg?lastEvt=...&lastDmg=...
+/indicators
+/state
+/map.img
+```
+
+Observed current `/state` keys for `a_4n`:
+
+```text
+valid
+aileron, %
+elevator, %
+rudder, %
+flaps, %
+gear, %
+airbrake, %
+H, m
+TAS, km/h
+IAS, km/h
+M
+AoA, deg
+AoS, deg
+Ny
+Vy, m/s
+Wx, deg/s
+Mfuel, kg
+Mfuel0, kg
+Mfuel 1, kg
+Mfuel0 1, kg
+Mfuel 2, kg
+Mfuel0 2, kg
+throttle 1, %
+power 1, hp
+RPM 1
+manifold pressure 1, atm
+oil temp 1, C
+thrust 1, kgs
+efficiency 1, %
+```
+
+Observed current `/indicators` keys for `a_4n`:
+
+```text
+valid
+army
+type
+speed
+pedals1
+pedals2
+pedals3
+pedals4
+stick_elevator
+stick_ailerons
+vario
+altitude_hour
+altitude_min
+altitude_10k
+altitude1_min
+altitude1_10k
+radio_altitude
+aviahorizon_roll
+aviahorizon_roll1
+aviahorizon_pitch1
+bank
+turn
+compass
+compass1
+compass2
+clock_hour
+clock_min
+clock_sec
+rpm_min
+rpm_hour
+oil_pressure
+water_temperature
+fuel
+fuel_consume
+airbrake_lever
+gears
+flaps
+trimmer
+throttle
+weapon2
+weapon4
+flaps_indicator
+gears_indicator
+trimmer_indicator
+mach
+g_meter
+g_meter_min
+g_meter_max
+aoa
+aoa_indexer1
+aoa_indexer2
+aoa_indexer3
+blister1
+blister2
+blister3
+blister4
+blister5
+blister6
+blister7
+blister8
+blister12
+```
+
+Gear-specific capture results from two live polling passes:
+
+| Field | Result |
+| --- | --- |
+| `/state` `gear, %` | Stayed exactly `100`. |
+| `/indicators` `gears` | Stayed exactly `1.0`. |
+| `/indicators` `gears_indicator` | Stayed near `1.0`; observed minor jitter around roughly `0.996` to `1.0`. |
+| `/indicators` `gears_lamp` | Not present for `a_4n`. |
+| `/hudmsg` new damage messages | No new damage messages during the focused capture. |
+| `/hudmsg` new events | No new events during the focused capture. |
+
+Conclusion:
+
+- The accessible API exposes landing gear position/indicator state.
+- It does not expose structured landing gear health, wheel status, strut status,
+  hydraulic status, left/right/nose gear damage, or "gear destroyed" data.
+- `/hudmsg.damage` is the only accessible channel that might report gear damage,
+  but it is a text stream, not structured telemetry, and no gear-specific message
+  was observed in this test.
+- `gears_indicator` can jitter slightly below `1.0` even when `/state` `gear, %`
+  and `/indicators` `gears` remain fully down. Treat near-1.0 values as down,
+  not as damage or transit.
+
+WTDeck implementation rule:
+
+1. Continue using `/state` `gear, %` as primary landing gear state.
+2. Continue falling back to `/indicators` `gears_indicator`, `gears`, then
+   `gears_lamp` when present.
+3. Clamp normalized gear values near fully down/up to avoid false transit flicker.
+4. Do not add a persistent `DAMAGED` gear state from structured telemetry,
+   because the API does not currently provide one.
+5. A future best-effort warning could watch `/hudmsg.damage` for text containing
+   `gear`, `wheel`, or localized equivalents, but that should be documented as
+   opportunistic and not authoritative.
+
 ## `/hudmsg`
 
 Request with cursors:

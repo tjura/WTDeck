@@ -10,7 +10,6 @@
     const palette = PALETTE[model.tone] || PALETTE.offline;
     const label = actionDefinition.panelLabel || actionDefinition.shortLabel || "";
     const status = model.statusText || "";
-    const value = model.valueText || "";
     const percent = typeof model.percent === "number" ? model.percent : null;
     const switchY = switchPosition(model.statusKey, percent);
 
@@ -37,43 +36,61 @@
       screw(18, 126),
       screw(126, 126),
       '<text x="72" y="27" text-anchor="middle" fill="#d9dde0" font-size="12" font-family="Arial, sans-serif" font-weight="700">' + escapeXml(label) + '</text>',
-      '<rect x="28" y="38" width="88" height="28" rx="4" fill="#050607" stroke="' + palette.accent + '" stroke-width="1"/>',
-      '<circle cx="45" cy="52" r="7" fill="' + palette.lamp + '" filter="url(#glow)" opacity="' + lampOpacity(model.statusKey) + '"/>',
-      '<text x="61" y="56" fill="' + palette.accent + '" font-size="11" font-family="Arial, sans-serif" font-weight="700">' + escapeXml(status) + '</text>',
+      renderStateRail(status, palette, model.statusKey),
       renderSwitch(palette, switchY),
-      renderValue(value, palette),
       '</svg>'
     ].join("");
 
     return "data:image/svg+xml;base64," + base64(svg);
   }
 
-  function renderSwitch(palette, y) {
+  function renderStateRail(status, palette, statusKey) {
     return [
-      '<rect x="58" y="76" width="28" height="48" rx="14" fill="#050607" stroke="#3d454a" stroke-width="1"/>',
-      '<circle cx="72" cy="' + y + '" r="12" fill="' + palette.accent + '" filter="url(#glow)"/>',
-      '<circle cx="72" cy="' + y + '" r="6" fill="#f9fbfc" opacity="0.55"/>'
+      '<rect x="20" y="38" width="28" height="88" rx="5" fill="#050607" stroke="' + palette.accent + '" stroke-width="1"/>',
+      '<circle cx="34" cy="50" r="5.5" fill="' + palette.lamp + '" filter="url(#glow)" opacity="' + lampOpacity(statusKey) + '"/>',
+      renderVerticalStatus(status, palette)
     ].join("");
   }
 
-  function renderValue(value, palette) {
-    if (!value) {
+  function renderVerticalStatus(status, palette) {
+    const letters = compactStatus(status).split("");
+    if (letters.length === 0) {
       return "";
     }
-    return '<text x="72" y="129" text-anchor="middle" fill="#edf1f3" font-size="12" font-family="Arial, sans-serif" font-weight="700">' + escapeXml(value) + '</text>';
+
+    const fontSize = letters.length <= 4 ? 16 : letters.length <= 6 ? 12 : 10;
+    const gap = letters.length <= 4 ? 17 : letters.length <= 6 ? 12 : 9.5;
+    const startY = 86 - ((letters.length - 1) * gap) / 2;
+
+    return letters
+      .map((letter, index) => {
+        const y = Math.round((startY + index * gap) * 10) / 10;
+        return '<text x="34" y="' + y + '" text-anchor="middle" dominant-baseline="middle" fill="' + palette.accent + '" font-size="' + fontSize + '" font-family="Arial, sans-serif" font-weight="800">' + escapeXml(letter) + '</text>';
+      })
+      .join("");
+  }
+
+  function renderSwitch(palette, y) {
+    return [
+      '<rect x="54" y="38" width="70" height="88" rx="5" fill="#080a0b" stroke="#323b42" stroke-width="1"/>',
+      '<rect x="72" y="48" width="36" height="72" rx="18" fill="#050607" stroke="#3d454a" stroke-width="1.5"/>',
+      '<path d="M90 61v46" stroke="#161b1e" stroke-width="10" stroke-linecap="round"/>',
+      '<circle cx="90" cy="' + y + '" r="16" fill="' + palette.accent + '" filter="url(#glow)"/>',
+      '<circle cx="90" cy="' + y + '" r="7" fill="#f9fbfc" opacity="0.58"/>'
+    ].join("");
   }
 
   function switchPosition(statusKey, percent) {
     if (typeof percent === "number") {
-      return Math.round(118 - (percent / 100) * 36);
+      return Math.round(104 - (percent / 100) * 40);
     }
     if (statusKey === "on") {
-      return 82;
+      return 64;
     }
     if (statusKey === "moving") {
-      return 100;
+      return 84;
     }
-    return 118;
+    return 104;
   }
 
   function lampOpacity(statusKey) {
@@ -91,6 +108,20 @@
       '<circle cx="' + x + '" cy="' + y + '" r="4" fill="#111416" stroke="#4a535a" stroke-width="1"/>',
       '<path d="M' + (x - 2.5) + ' ' + y + 'h5" stroke="#59636b" stroke-width="1"/>'
     ].join("");
+  }
+
+  function compactStatus(status) {
+    const normalized = String(status || "").trim().toUpperCase();
+    if (normalized === "NO FLIGHT") {
+      return "NOFLT";
+    }
+    if (normalized === "OFFLINE") {
+      return "OFF";
+    }
+    if (normalized === "TRANSIT") {
+      return "TRNST";
+    }
+    return normalized.replace(/\s+/g, "");
   }
 
   function escapeXml(value) {
