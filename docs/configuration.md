@@ -23,8 +23,10 @@
     "ProfileName": "WTDeck",
     "PluginUuid": "com.wtdeck.streamdock",
     "PluginActionUuid": "com.wtdeck.streamdock.gear",
+    "PluginNativeGearActionUuid": "com.wtdeck.nativegear.gear",
     "PluginFlaresActionUuid": "com.wtdeck.streamdock.flares",
     "PluginFlightAlertsActionUuid": "com.wtdeck.streamdock.flight-alerts",
+    "NativeGearSlot": "1,0",
     "FlightAlertsPanelSlot": "5,0",
     "UserDataRoot": null,
     "InstallDir": null
@@ -51,8 +53,10 @@
 - `ProfileName`: the dedicated profile name. Does not overwrite your existing profiles.
 - `PluginUuid`: the plugin package UUID (installed at `%APPDATA%\HotSpot\StreamDock\plugins\{uuid}.sdPlugin\`)
 - `PluginActionUuid`: the action UUID used by the generated profile
+- `PluginNativeGearActionUuid`: action UUID for the experimental plugin-only direct-8111 landing gear button
 - `PluginFlaresActionUuid`: action UUID for the flares button
 - `PluginFlightAlertsActionUuid`: action UUID for the over-G information tile
+- `NativeGearSlot`: generated profile slot for the experimental direct-8111 landing gear button
 - `FlightAlertsPanelSlot`: generated profile slot for the information controller action
 - `UserDataRoot`: optional override for `%APPDATA%\HotSpot\StreamDock`
 - `InstallDir`: optional override for the Stream Controller install directory

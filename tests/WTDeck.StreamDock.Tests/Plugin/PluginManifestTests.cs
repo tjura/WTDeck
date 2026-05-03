@@ -34,6 +34,26 @@ public class PluginManifestTests
         js.Should().NotContain("rows:");
     }
 
+    [Fact]
+    public void Native_gear_plugin_manifest_is_executable_keypad_action()
+    {
+        using var document = JsonDocument.Parse(File.ReadAllText(Path.Combine(FindRepoRoot(), "src", "WTDeck.NativeGear.Plugin", "manifest.json")));
+        var actions = document.RootElement.GetProperty("Actions").EnumerateArray();
+
+        document.RootElement.GetProperty("Name").GetString().Should().Be("WTDeck Native Gear");
+        document.RootElement.GetProperty("CodePathWin").GetString().Should().Be("WTDeck.NativeGear.Plugin.exe");
+
+        var action = actions.Single(a => a.GetProperty("UUID").GetString() == "com.wtdeck.nativegear.gear");
+        var controllers = action.GetProperty("Controllers").EnumerateArray().Select(c => c.GetString()).ToList();
+
+        action.GetProperty("Name").GetString().Should().Be("Landing Gear Native");
+        action.GetProperty("Tooltip").GetString().Should().Contain("without WTDeck.App");
+        action.GetProperty("Icon").GetString().Should().Be("assets/gear-unknown");
+        controllers.Should().Equal("Keypad");
+        action.GetProperty("SupportedInMultiActions").GetBoolean().Should().BeFalse();
+        action.GetProperty("UserTitleEnabled").GetBoolean().Should().BeFalse();
+    }
+
     private static string FindRepoRoot()
     {
         foreach (var startPath in new[] { Directory.GetCurrentDirectory(), AppContext.BaseDirectory }.Distinct(StringComparer.OrdinalIgnoreCase))

@@ -1,0 +1,24 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <OutputType>Exe</OutputType>
+    <TargetFramework>net8.0-windows</TargetFramework>
+    <ImplicitUsings>enable</ImplicitUsings>
+    <Nullable>enable</Nullable>
+    <AssemblyName>WTDeck.NativeGear.Plugin</AssemblyName>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\WTDeck.Core\WTDeck.Core.csproj" />
+    <ProjectReference Include="..\WTDeck.Input.Windows\WTDeck.Input.Windows.csproj" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <PackageReference Include="Microsoft.Extensions.Logging.Abstractions" Version="8.0.2" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <Content Include="manifest.json" CopyToOutputDirectory="Always" CopyToPublishDirectory="Always" />
+    <Content Include="property-inspector.html" CopyToOutputDirectory="Always" CopyToPublishDirectory="Always" />
+    <Content Include="..\WTDeck.Plugin\assets\*.svg" Link="assets\%(Filename)%(Extension)" CopyToOutputDirectory="Always" CopyToPublishDirectory="Always" />
+  </ItemGroup>
+</Project>

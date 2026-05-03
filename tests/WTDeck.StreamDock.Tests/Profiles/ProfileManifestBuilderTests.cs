@@ -14,8 +14,10 @@ public class ProfileManifestBuilderTests
         DeviceSerialNumber = "8730DB78224F",
         DeviceModel = "20GBA9901",
         PluginActionUuid = "com.wtdeck.streamdock.gear",
+        PluginNativeGearActionUuid = "com.wtdeck.nativegear.gear",
         PluginFlaresActionUuid = "com.wtdeck.streamdock.flares",
         PluginFlightAlertsActionUuid = "com.wtdeck.streamdock.flight-alerts",
+        NativeGearSlot = "1,0",
         FlightAlertsPanelSlot = "5,0"
     };
 
@@ -41,6 +43,20 @@ public class ProfileManifestBuilderTests
         action.UUID.Should().Be("com.wtdeck.streamdock.gear");
         action.Name.Should().Be("Landing Gear");
         action.States.Should().HaveCount(1);
+    }
+
+    [Fact]
+    public void Profile_has_native_landing_gear_button_at_1_0()
+    {
+        var (_, _, manifest) = _builder.Build(_options);
+
+        manifest.Actions.Should().ContainKey("1,0");
+        var action = manifest.Actions["1,0"];
+        action.UUID.Should().Be("com.wtdeck.nativegear.gear");
+        action.Name.Should().Be("Landing Gear Native");
+        action.States.Should().HaveCount(1);
+        action.States[0].Image.Should().Be("assets/gear-unknown");
+        action.States[0].ShowTitle.Should().BeFalse();
     }
 
     [Fact]
@@ -81,6 +97,7 @@ public class ProfileManifestBuilderTests
         p1.Should().Be(p2);
         page1.Should().Be(page2);
         m1.Actions["0,0"].ActionID.Should().Be(m2.Actions["0,0"].ActionID);
+        m1.Actions["1,0"].ActionID.Should().Be(m2.Actions["1,0"].ActionID);
         m1.Actions["0,4"].ActionID.Should().Be(m2.Actions["0,4"].ActionID);
         m1.Actions["5,0"].ActionID.Should().Be(m2.Actions["5,0"].ActionID);
     }

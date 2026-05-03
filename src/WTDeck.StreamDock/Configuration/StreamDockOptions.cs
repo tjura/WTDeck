@@ -12,8 +12,10 @@ public sealed class StreamDockOptions
     public string ProfileName { get; set; } = "WTDeck";
     public string PluginUuid { get; set; } = "com.wtdeck.streamdock";
     public string PluginActionUuid { get; set; } = "com.wtdeck.streamdock.gear";
+    public string PluginNativeGearActionUuid { get; set; } = "com.wtdeck.nativegear.gear";
     public string PluginFlaresActionUuid { get; set; } = "com.wtdeck.streamdock.flares";
     public string PluginFlightAlertsActionUuid { get; set; } = "com.wtdeck.streamdock.flight-alerts";
+    public string NativeGearSlot { get; set; } = "1,0";
     public string FlightAlertsPanelSlot { get; set; } = "5,0";
     public bool ForceOverwriteProfile { get; set; } = true;
 }
