@@ -1,0 +1,61 @@
+:root {
+  color-scheme: dark;
+  font-family: Arial, sans-serif;
+  background: #171a1f;
+  color: #edf1f3;
+}
+
+body {
+  margin: 0;
+  background: #171a1f;
+}
+
+main {
+  box-sizing: border-box;
+  display: grid;
+  gap: 14px;
+  padding: 16px;
+}
+
+.field,
+.check-field {
+  display: grid;
+  gap: 6px;
+}
+
+.check-field {
+  align-items: center;
+  grid-template-columns: 18px 1fr;
+}
+
+label {
+  color: #c7d0d8;
+  font-size: 12px;
+  font-weight: 700;
+}
+
+input,
+select {
+  box-sizing: border-box;
+  width: 100%;
+  min-height: 30px;
+  border: 1px solid #404852;
+  border-radius: 4px;
+  background: #0d0f12;
+  color: #f4f7f8;
+  font-size: 13px;
+  padding: 6px 8px;
+}
+
+input[type="checkbox"] {
+  width: 16px;
+  min-height: 16px;
+  padding: 0;
+}
+
+.note {
+  margin: 0;
+  color: #9aa7b2;
+  font-size: 12px;
+  line-height: 1.35;
+}

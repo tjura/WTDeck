@@ -7,12 +7,12 @@ line. Security support is best-effort only.
 
 ## Supported versions
 
-At the moment, the only supported line is the active development branch.
+At the moment, security support applies to the current active project state.
 
 | Version | Supported |
 | ------- | --------- |
-| `main`  | Yes       |
-| Tagged releases | No stable releases yet |
+| Current development version | Yes |
+| Older or archived versions | No |
 
 ## Reporting a vulnerability
 
@@ -24,17 +24,16 @@ Instead, email:
 
 Include as much detail as you can:
 
-- affected commit, branch, or build
 - reproduction steps
 - expected impact
-- environment details
-- logs or proof-of-concept material if relevant
+- affected version or release, if known
+- supporting notes, screenshots, or examples if relevant
 
 ## What to expect
 
 - reports are handled on a best-effort basis
 - response times may vary
-- fixes may land on the development branch first
+- fixes may be handled in the current project version first
 - public disclosure should wait until the issue has been reviewed
 
 If you are unsure whether something is a security issue, send it privately first.

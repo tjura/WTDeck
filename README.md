@@ -1,159 +1,90 @@
 # WTDeck
 
-WTDeck is an experimental Windows companion app and Stream Controller plugin for War Thunder.
+WTDeck is an experimental Stream Dock plugin for War Thunder cockpit controls.
 
-> Status: experimental, pre-1.0, and not yet a stable release.
-> Expect breaking changes, incomplete features, and rough edges while the project is still taking shape.
+The current working slice is `Landing Gear`: a Stream Dock key displays live
+landing gear state from War Thunder telemetry and sends the configured in-game
+binding through a local WTDeck key sender.
 
-WTDeck is an unofficial community project. It is not affiliated with, endorsed by, or sponsored by Gaijin Entertainment, War Thunder, HotSpot, or Stream Controller. Product names, logos, and trademarks belong to their respective owners.
+> Status: local live-test prototype, pre-release, Windows only.
 
-## What WTDeck does today
+WTDeck is an unofficial community project. It is not affiliated with, endorsed
+by, or sponsored by Gaijin Entertainment, War Thunder, HotSpot, or Stream
+Controller. Product names, logos, and trademarks belong to their respective
+owners.
 
-- reads War Thunder telemetry from the local HTTP telemetry endpoints
-- maps telemetry into dynamic landing gear button states
-- forwards button presses from Stream Controller to the game as keyboard input
-- installs and syncs the local plugin/profile assets needed by the app
+## What Works Today
 
-The current implementation is focused on an initial vertical slice around landing gear state, Stream Controller integration, and Windows input delivery.
+- Polls War Thunder localhost telemetry at `http://127.0.0.1:8111`.
+- Renders an immersive dynamic Landing Gear button face.
+- Shows `UP`, `DOWN`, `TRANSIT`, `OFFLINE`, or `NO FLIGHT`.
+- Sends the landing gear binding, default `G`, through the local companion.
+- Deploys the `.sdPlugin` folder into the local Stream Dock plugins directory.
+- Restarts Stream Controller for live testing.
 
-## Project status
+## Local Development
 
-WTDeck is in active development.
-
-- There is no stable release yet.
-- There is no published installer yet.
-- The public API and on-disk configuration may still change.
-- CI is not configured yet, so contributors must run validation locally.
-
-If you want a polished end-user product, this repository is not there yet. If you want to help shape the project early, this is the right time to get involved.
-
-## Platform and prerequisites
-
-Current target environment:
-
-- Windows 10 or later
-- .NET 8 SDK for building from source
-- War Thunder with telemetry available on `http://localhost:8111`
-- Stream Controller 2.9 or later
-
-## Quick start
-
-There is no packaged public release yet. The current path is source-first:
+Validate the plugin:
 
 ```powershell
-dotnet restore
-dotnet build -c Release -warnaserror
-dotnet run --project .\src\WTDeck.App\WTDeck.App.csproj -c Release
+.\scripts\validate-plugin.ps1
 ```
 
-Typical usage flow:
+Check War Thunder telemetry:
 
-1. Build and launch `WTDeck.App`.
-2. Let the app sync the local Stream Controller plugin/profile assets.
-3. Start War Thunder.
-4. Use the WTDeck button in Stream Controller.
+```powershell
+.\scripts\test-telemetry.ps1
+```
 
-For architecture and protocol details, see:
+Deploy locally:
 
-- [Architecture](docs/architecture.md)
-- [Configuration](docs/configuration.md)
-- [Protocol](docs/protocol.md)
-- [Testing](docs/testing.md)
-- [Troubleshooting](docs/troubleshooting.md)
+```powershell
+.\scripts\deploy-local.ps1 -NoBackup
+```
 
-## Development
+Start or restart the key sender companion:
 
-### Repository layout
+```powershell
+.\scripts\start-companion.ps1 -Restart
+```
+
+Stream Dock debug UI:
 
 ```text
-WTDeck/
-|- src/
-|  |- WTDeck.App/                # Windows host, tray app, DI wiring
-|  |- WTDeck.Core/               # domain models, rules, contracts, key bindings
-|  |- WTDeck.Telemetry/          # War Thunder telemetry source and mapping
-|  |- WTDeck.Input.Windows/      # Win32 keyboard input boundary
-|  |- WTDeck.Ipc/                # local HTTP bridge between app and plugin
-|  |- WTDeck.StreamDock/         # plugin/profile sync and process control
-|  `- WTDeck.Plugin/             # plain HTML/JS Stream Controller plugin assets
-|- tests/
-|  |- WTDeck.Core.Tests/
-|  |- WTDeck.Telemetry.Tests/
-|  |- WTDeck.Ipc.Tests/
-|  |- WTDeck.App.IntegrationTests/
-|  `- WTDeck.StreamDock.Tests/
-|- docs/
-|- build/
-|- assets/
-|- README.md
-|- CONTRIBUTING.md
-|- SECURITY.md
-`- CLAUDE.md
+http://localhost:23519/
 ```
 
-### Build and test
+Companion health endpoint:
 
-Core validation commands:
-
-```powershell
-dotnet restore
-dotnet build -c Release -warnaserror
-dotnet test -c Release --no-build
-dotnet format --verify-no-changes
-pwsh .\build\validate-quality.ps1
+```text
+http://127.0.0.1:34911/health
 ```
 
-The Stream Controller plugin in this repository is currently plain HTML/JavaScript. There is no `npm`-based build pipeline yet. Plugin validation currently consists of manifest parsing, asset checks, and the relevant .NET integration tests.
+## Repository Layout
 
-### Debug and emulation harness
+- `plugin/com.wtdeck.warthunder.sdPlugin/` - Stream Dock plugin package source.
+- `scripts/` - validation, packaging, deployment, telemetry, and companion tools.
+- `docs/` - research notes, architecture, telemetry, and live-test lessons.
+- `assets/` - legacy assets only when they are still needed by the current
+  implementation.
 
-WTDeck includes a built-in test harness for local validation without a live plugin sync/restart cycle.
+## Key Documentation
 
-Live debug mode:
+- [War Thunder plugin architecture](docs/war-thunder-plugin-architecture.md)
+- [Stream Dock input lessons](docs/streamdock-input-lessons.md)
+- [War Thunder localhost telemetry research](docs/war-thunder-localhost-telemetry.md)
+- [StreamDock plugin development research](docs/streamdock-plugin-development.md)
 
-```powershell
-dotnet run --project .\src\WTDeck.App\WTDeck.App.csproj -- --debug
-```
+## Current Direction
 
-Deterministic emulation mode:
+Keep the Stream Dock plugin responsible for telemetry, rendering, settings, and
+command intent. Keep Windows input in the local companion process. Do not rely on
+native Stream Dock hotkey manifest fields for custom code actions.
 
-```powershell
-dotnet run --project .\src\WTDeck.App\WTDeck.App.csproj -- --emulate-api .\scenarios\landing-gear-cycle.json
-```
-
-The emulation run validates two gates:
-
-- telemetry parsing
-- plugin-facing UI output
-
-See [docs/testing.md](docs/testing.md) for the full workflow, console output format, and scenario file schema.
-
-## Architecture direction
-
-WTDeck is intentionally split into:
-
-- a Windows app that owns telemetry, rule evaluation, diagnostics, and input behavior
-- a thin Stream Controller plugin that only renders state and forwards events
-- shared contracts and deterministic tests around the app/plugin boundary
-
-If you are evaluating a change, keep the plugin thin and keep Win32 input isolated in `WTDeck.Input.Windows`.
-
-## Roadmap
-
-Current priorities:
-
-- stabilize the landing gear vertical slice
-- improve app UX and configuration management
-- broaden telemetry coverage and aircraft-specific behavior
-- package the app/plugin cleanly for public testing
-- add CI and release automation once the workflow is stable
-
-## Contributing and support
-
-- Read [CONTRIBUTING.md](CONTRIBUTING.md) before opening a pull request.
-- Use [GitHub Issues](../../issues) for bugs, feature requests, and support questions once the repo is on GitHub.
-- Report security issues privately as described in [SECURITY.md](SECURITY.md).
-- Community expectations are defined in [CODE_OF_CONDUCT.md](CODE_OF_CONDUCT.md).
+Future actions should be added one at a time with the same standard as Landing
+Gear: clear telemetry mapping, dynamic button rendering, explicit command
+adapter behavior, local deployment automation, and live in-game verification.
 
 ## License
 
-WTDeck is licensed under the [Apache License 2.0](LICENSE).
+This project is licensed under the terms in [LICENSE](LICENSE).

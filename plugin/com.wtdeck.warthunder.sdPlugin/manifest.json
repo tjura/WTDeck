@@ -1,0 +1,38 @@
+{
+  "Actions": [
+    {
+      "Icon": "images/actions/gear",
+      "Name": "Landing Gear",
+      "PropertyInspectorPath": "property-inspector/index.html",
+      "States": [
+        {
+          "Image": "images/actions/gear",
+          "TitleAlignment": "middle",
+          "FontSize": "12"
+        }
+      ],
+      "SupportedInMultiActions": true,
+      "Tooltip": "War Thunder landing gear state and toggle command",
+      "UUID": "com.wtdeck.warthunder.gear.toggle"
+    }
+  ],
+  "Author": "WTDeck",
+  "Category": "War Thunder",
+  "CategoryIcon": "images/category",
+  "CodePath": "plugin/index.html",
+  "Description": "War Thunder cockpit controls with live localhost flight telemetry for Stream Dock.",
+  "Icon": "images/plugin",
+  "Name": "WTDeck War Thunder",
+  "OS": [
+    {
+      "MinimumVersion": "10",
+      "Platform": "windows"
+    }
+  ],
+  "SDKVersion": 2,
+  "Software": {
+    "MinimumVersion": "3.10.188.226"
+  },
+  "URL": "https://github.com/wtdeck/streamdock-war-thunder",
+  "Version": "0.1.0"
+}

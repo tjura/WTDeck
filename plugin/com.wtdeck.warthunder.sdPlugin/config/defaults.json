@@ -1,0 +1,20 @@
+{
+  "schemaVersion": 1,
+  "telemetry": {
+    "baseUrl": "http://127.0.0.1:8111",
+    "pollIntervalMs": 200,
+    "requestTimeoutMs": 120,
+    "staleAfterMs": 900,
+    "slowPollIntervalMs": 1000
+  },
+  "rendering": {
+    "canvasSize": 144,
+    "titleMode": "image-only",
+    "showNumericPercent": true
+  },
+  "commands": {
+    "defaultAdapter": "companion-http",
+    "companionTimeoutMs": 250,
+    "companionUrl": "http://127.0.0.1:34911/command"
+  }
+}

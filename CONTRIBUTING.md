@@ -3,17 +3,17 @@
 WTDeck is an experimental project. Contributions are welcome, but the repository
 is still shaping its boundaries, workflow, and release model.
 
-## Before you start
+## Before You Start
 
-- Read [README.md](README.md) for project status and local validation commands.
-- Read the architecture and protocol docs in [docs](docs).
-- Open an issue first if your change is large, architectural, or introduces a
-  new feature area.
+- Read [README.md](README.md) for current project status.
+- Open an issue first if your change is large, changes the project direction, or
+  introduces a new area of work.
+- Start with focused improvements whenever possible.
 
-Small fixes, focused tests, documentation corrections, and narrow bug fixes are
-usually the easiest place to start.
+Small fixes, documentation corrections, and narrow bug fixes are usually the
+easiest place to start.
 
-## What we accept
+## What We Accept
 
 We are open to:
 
@@ -21,58 +21,40 @@ We are open to:
 - feature requests that fit the current scope
 - focused pull requests
 - documentation improvements
-- tests that improve confidence in existing behavior
+- improvements that make the project easier to understand, use, or maintain
 
 We may decline changes that:
 
-- move business logic into the plugin
-- increase coupling between layers
 - add broad new scope without prior discussion
-- rewrite unrelated parts of the codebase as part of a small fix
+- rewrite unrelated parts of the project as part of a small fix
+- make the project harder to review, maintain, or explain
 
-## Development expectations
+## Contribution Expectations
 
 - Keep repository content in English.
-- Keep the Stream Controller plugin thin and transport-focused.
-- Keep Win32 input isolated in `src/WTDeck.Input.Windows`.
-- Update docs when behavior, configuration, or public contracts change.
-- Prefer small, reviewable pull requests over large batches of changes.
+- Keep changes focused and easy to review.
+- Update documentation when user-facing behavior or project guidance changes.
+- Explain the reason for each meaningful change.
+- Avoid unrelated refactors.
 
-## Validation
-
-There is no CI yet. Before opening a pull request, run the local validation
-commands yourself:
-
-```powershell
-dotnet restore
-dotnet build -c Release -warnaserror
-dotnet test -c Release --no-build
-dotnet format --verify-no-changes
-pwsh .\build\validate-quality.ps1
-```
-
-The plugin is currently plain HTML/JavaScript. There is no npm-based build
-pipeline yet, so plugin validation is handled through the quality script,
-manifest checks, and the relevant .NET tests.
-
-## Pull request guidelines
+## Pull Request Guidelines
 
 When you open a pull request:
 
 - explain the problem and the change clearly
 - link the related issue when there is one
-- keep the PR focused on one problem
-- include tests or explain why tests are not practical
-- include screenshots, logs, or repro details when the change affects behavior
-- avoid unrelated refactors
+- keep the pull request focused on one problem
+- describe how you checked the change
+- include screenshots, logs, or examples when they help reviewers understand the
+  result
 
-## Review and merge
+## Review and Merge
 
 WTDeck is currently maintained on a best-effort basis.
 
-- response times may vary
-- not every issue or PR will be accepted
-- roadmap fit and maintainability matter more than implementation speed
+- Response times may vary.
+- Not every issue or pull request will be accepted.
+- Roadmap fit and maintainability matter more than implementation speed.
 
 By submitting a contribution, you agree that it may be included in the project
 under the repository license.

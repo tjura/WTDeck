@@ -1,0 +1,39 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8">
+    <title>WTDeck War Thunder Settings</title>
+    <link rel="stylesheet" href="styles.css">
+  </head>
+  <body>
+    <main>
+      <section class="field">
+        <label for="adapter">Command Adapter</label>
+        <select id="adapter">
+          <option value="companion-http">WTDeck Key Sender</option>
+          <option value="none">Read Only</option>
+        </select>
+      </section>
+
+      <section class="field">
+        <label for="hotkey">Game Binding Label</label>
+        <input id="hotkey" type="text" maxlength="24" placeholder="Example: G">
+      </section>
+
+      <section class="field">
+        <label for="companionUrl">Companion URL</label>
+        <input id="companionUrl" type="url" placeholder="http://127.0.0.1:34911/command">
+      </section>
+
+      <section class="check-field">
+        <input id="invertTelemetry" type="checkbox">
+        <label for="invertTelemetry">Invert telemetry percent</label>
+      </section>
+
+      <p class="note">
+        Landing Gear sends the focused game window the configured key through the local WTDeck key sender.
+      </p>
+    </main>
+    <script src="index.js"></script>
+  </body>
+</html>

@@ -5,25 +5,23 @@
 Please check the existing documentation first:
 
 - [README.md](README.md)
-- [docs/configuration.md](docs/configuration.md)
-- [docs/troubleshooting.md](docs/troubleshooting.md)
+- [CONTRIBUTING.md](CONTRIBUTING.md)
 
 ## Where to ask for help
 
-Use GitHub Issues for:
+Use project issues for:
 
 - bug reports
 - feature requests
-- setup problems
-- support questions about the current development version
+- support questions
+- documentation gaps
 
 When reporting a problem, include:
 
-- Windows version
-- Stream Controller version
 - what you expected to happen
 - what actually happened
-- any relevant logs or screenshots
+- steps to reproduce the problem, if known
+- any relevant screenshots, notes, or examples
 
 ## Security issues
 
