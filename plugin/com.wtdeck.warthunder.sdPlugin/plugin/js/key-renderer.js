@@ -3,9 +3,6 @@
     safe: { accent: "#46d982", lamp: "#8affb9", background: "#141915" },
     transit: { accent: "#f2b84b", lamp: "#ffd477", background: "#1b1710" },
     dark: { accent: "#7f8a90", lamp: "#2e3538", background: "#111417" },
-    armed: { accent: "#e85d4f", lamp: "#ff9b85", background: "#1c1210" },
-    live: { accent: "#48c7f0", lamp: "#98e6ff", background: "#10171b" },
-    standby: { accent: "#c6cbd1", lamp: "#7e8790", background: "#151719" },
     offline: { accent: "#565f68", lamp: "#20252b", background: "#111317" }
   };
 
@@ -14,7 +11,6 @@
     const label = actionDefinition.panelLabel || actionDefinition.shortLabel || "";
     const status = model.statusText || "";
     const value = model.valueText || "";
-    const subValue = model.subValueText || "";
     const percent = typeof model.percent === "number" ? model.percent : null;
     const switchY = switchPosition(model.statusKey, percent);
 
@@ -44,29 +40,15 @@
       '<rect x="28" y="38" width="88" height="28" rx="4" fill="#050607" stroke="' + palette.accent + '" stroke-width="1"/>',
       '<circle cx="45" cy="52" r="7" fill="' + palette.lamp + '" filter="url(#glow)" opacity="' + lampOpacity(model.statusKey) + '"/>',
       '<text x="61" y="56" fill="' + palette.accent + '" font-size="11" font-family="Arial, sans-serif" font-weight="700">' + escapeXml(status) + '</text>',
-      renderSwitch(actionDefinition.kind, palette, switchY),
-      renderValue(value, subValue, palette),
+      renderSwitch(palette, switchY),
+      renderValue(value, palette),
       '</svg>'
     ].join("");
 
     return "data:image/svg+xml;base64," + base64(svg);
   }
 
-  function renderSwitch(kind, palette, y) {
-    if (kind === "momentary") {
-      return [
-        '<rect x="36" y="80" width="72" height="34" rx="17" fill="#27100e" stroke="' + palette.accent + '" stroke-width="2"/>',
-        '<text x="72" y="102" text-anchor="middle" fill="' + palette.lamp + '" font-size="13" font-family="Arial, sans-serif" font-weight="800">PRESS</text>'
-      ].join("");
-    }
-
-    if (kind === "status") {
-      return [
-        '<path d="M34 89h76" stroke="' + palette.accent + '" stroke-width="2" opacity="0.65"/>',
-        '<path d="M34 104h76" stroke="' + palette.accent + '" stroke-width="2" opacity="0.35"/>'
-      ].join("");
-    }
-
+  function renderSwitch(palette, y) {
     return [
       '<rect x="58" y="76" width="28" height="48" rx="14" fill="#050607" stroke="#3d454a" stroke-width="1"/>',
       '<circle cx="72" cy="' + y + '" r="12" fill="' + palette.accent + '" filter="url(#glow)"/>',
@@ -74,17 +56,11 @@
     ].join("");
   }
 
-  function renderValue(value, subValue, palette) {
-    if (!value && !subValue) {
+  function renderValue(value, palette) {
+    if (!value) {
       return "";
     }
-    const secondary = subValue
-      ? '<text x="72" y="116" text-anchor="middle" fill="' + palette.accent + '" font-size="10" font-family="Arial, sans-serif" font-weight="700">' + escapeXml(subValue) + '</text>'
-      : "";
-    const primary = value
-      ? '<text x="72" y="129" text-anchor="middle" fill="#edf1f3" font-size="12" font-family="Arial, sans-serif" font-weight="700">' + escapeXml(value) + '</text>'
-      : "";
-    return secondary + primary;
+    return '<text x="72" y="129" text-anchor="middle" fill="#edf1f3" font-size="12" font-family="Arial, sans-serif" font-weight="700">' + escapeXml(value) + '</text>';
   }
 
   function switchPosition(statusKey, percent) {

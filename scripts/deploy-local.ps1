@@ -1,3 +1,12 @@
+<#
+.SYNOPSIS
+Deploys the WTDeck Stream Dock plugin into the local Stream Dock plugins folder.
+
+.DESCRIPTION
+Validates the plugin package, optionally backs up the currently deployed copy,
+mirrors the working `.sdPlugin` folder into Stream Dock AppData, restarts Stream
+Controller, and starts the local WTDeck key sender companion.
+#>
 param(
     [switch] $NoRestart,
     [switch] $NoBackup,

@@ -117,16 +117,6 @@
       if (adapter === "none" || command.intent === "none") {
         return true;
       }
-      if (adapter === "native-streamdock-hotkey") {
-        this.bridge.logMessage(
-          "Native Stream Dock hotkey is unsupported for custom code actions; falling back to companion for '" +
-            command.intent +
-            "' (" +
-            (command.defaultHotkeyLabel || "configured manifest key") +
-            ")."
-        );
-        return this.dispatchCompanionCommand(actionDefinition, settings, phase);
-      }
       if (adapter === "companion-http") {
         return this.dispatchCompanionCommand(actionDefinition, settings, phase);
       }
@@ -168,10 +158,10 @@
   }
 
   function normalizeAdapter(adapter) {
-    if (adapter === "unassigned") {
-      return "none";
+    if (adapter === "companion-http" || adapter === "none") {
+      return adapter;
     }
-    return adapter || "none";
+    return "none";
   }
 
   window.WTDeckActionRuntime = ActionRuntime;

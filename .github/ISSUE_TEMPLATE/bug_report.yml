@@ -13,13 +13,12 @@ body:
     attributes:
       label: Affected component
       options:
-        - WTDeck.App
-        - WTDeck.Plugin
-        - WTDeck.StreamDock sync
-        - Telemetry
-        - Input.Windows
-        - IPC / local API
-        - Build or packaging
+        - Stream Dock plugin
+        - Landing Gear action
+        - War Thunder telemetry
+        - WTDeck key sender companion
+        - Local deployment script
+        - Packaging or validation
         - Documentation
     validations:
       required: true
@@ -41,7 +40,7 @@ body:
     id: stream_controller_version
     attributes:
       label: Stream Controller version
-      placeholder: 2.9.x
+      placeholder: 3.10.x
   - type: input
     id: war_thunder_version
     attributes:
@@ -52,9 +51,10 @@ body:
     attributes:
       label: Steps to reproduce
       placeholder: |
-        1. Start WTDeck.App
+        1. Deploy with .\scripts\deploy-local.ps1 -NoBackup
         2. Open Stream Controller
-        3. ...
+        3. Start War Thunder test flight
+        4. ...
     validations:
       required: true
   - type: textarea

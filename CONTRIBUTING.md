@@ -37,6 +37,19 @@ We may decline changes that:
 - Explain the reason for each meaningful change.
 - Avoid unrelated refactors.
 
+## Validation
+
+Before opening a pull request, run the checks that match the changed files:
+
+```powershell
+.\scripts\validate-plugin.ps1
+.\scripts\deploy-local.ps1 -WhatIf
+```
+
+For plugin JavaScript changes, also run `node --check` on the changed `.js`
+files. For PowerShell changes, run a parser check before submitting. The GitHub
+validation workflow repeats these checks on Windows.
+
 ## Pull Request Guidelines
 
 When you open a pull request:

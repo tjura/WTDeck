@@ -1,0 +1,54 @@
+name: Validate
+
+on:
+  pull_request:
+  push:
+    branches:
+      - main
+
+jobs:
+  plugin:
+    name: Plugin validation
+    runs-on: windows-latest
+
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@v4
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+
+      - name: Validate plugin manifest and assets
+        shell: pwsh
+        run: .\scripts\validate-plugin.ps1
+
+      - name: Check plugin JavaScript syntax
+        shell: pwsh
+        run: |
+          $files = Get-ChildItem -LiteralPath "plugin\com.wtdeck.warthunder.sdPlugin" -Recurse -Filter "*.js"
+          foreach ($file in $files) {
+            node --check $file.FullName
+          }
+
+      - name: Check PowerShell script syntax
+        shell: pwsh
+        run: |
+          $allErrors = @()
+          foreach ($path in Get-ChildItem -LiteralPath "scripts" -Filter "*.ps1") {
+            $tokens = $null
+            $errors = $null
+            [System.Management.Automation.Language.Parser]::ParseFile($path.FullName, [ref] $tokens, [ref] $errors) | Out-Null
+            if ($errors) {
+              $allErrors += $errors | ForEach-Object { "$($path.Name): $($_.Message)" }
+            }
+          }
+          if ($allErrors.Count) {
+            $allErrors | Write-Error
+            exit 1
+          }
+
+      - name: Package plugin
+        shell: pwsh
+        run: .\scripts\package-plugin.ps1

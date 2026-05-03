@@ -8,11 +8,11 @@ Fixes #
 
 ## Validation
 
-- [ ] `dotnet build -c Release -warnaserror`
-- [ ] `dotnet test -c Release --no-build`
-- [ ] `dotnet format --verify-no-changes`
-- [ ] `pwsh .\build\validate-quality.ps1`
-- [ ] Manual validation completed where appropriate
+- [ ] `.\scripts\validate-plugin.ps1`
+- [ ] `node --check` run for plugin JavaScript files
+- [ ] PowerShell parser check run for scripts
+- [ ] `.\scripts\deploy-local.ps1 -WhatIf`
+- [ ] Manual Stream Dock or War Thunder validation completed where appropriate
 
 ## Documentation
 

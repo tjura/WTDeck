@@ -7,7 +7,7 @@ body:
       value: |
         Thanks for the idea.
 
-        WTDeck is still pre-1.0, so the most useful requests are focused, concrete, and aligned with the current Windows + Stream Controller scope.
+        WTDeck is still pre-1.0. The current supported plugin action is Landing Gear, so the most useful requests are focused, concrete, and aligned with the current Windows + Stream Dock + War Thunder telemetry scope.
   - type: textarea
     id: problem
     attributes:
@@ -32,10 +32,11 @@ body:
     attributes:
       label: Primary area
       options:
+        - Landing Gear action
         - Telemetry
-        - Stream Controller plugin
-        - Input / key bindings
-        - App UX
+        - Stream Dock plugin
+        - WTDeck key sender companion
+        - New cockpit action
         - Packaging / installation
         - Documentation
     validations:

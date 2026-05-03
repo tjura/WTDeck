@@ -62,14 +62,6 @@
       indicators.gears,
       indicators.gears_lamp
     ]);
-    const flapsPercent = firstPercent([
-      state["flaps, %"],
-      indicators.flaps_indicator
-    ]);
-    const airbrakePercent = firstPercent([
-      state["airbrake, %"],
-      indicators.airbrake_lever
-    ]);
 
     return {
       connected: raw.connected,
@@ -81,22 +73,7 @@
       errorMessage: raw.error ? raw.error.message : "",
       aircraftType: indicators.type || "",
       army: indicators.army || "",
-      gearPercent: gearPercent,
-      flapsPercent: flapsPercent,
-      airbrakePercent: airbrakePercent,
-      iasKmh: numberOrNull(state["IAS, km/h"]),
-      tasKmh: numberOrNull(state["TAS, km/h"]),
-      altitudeM: numberOrNull(state["H, m"]),
-      mach: firstNumber([state.M, indicators.mach]),
-      gLoad: firstNumber([state.Ny, indicators.g_meter]),
-      aoaDeg: firstNumber([state["AoA, deg"], indicators.aoa]),
-      verticalSpeedMs: firstNumber([state["Vy, m/s"], indicators.vario]),
-      fuelKg: numberOrNull(state["Mfuel, kg"]),
-      throttlePercent: firstPercent([
-        state["throttle 1, %"],
-        state["throttle 2, %"],
-        state["throttle, %"]
-      ])
+      gearPercent: gearPercent
     };
   }
 
@@ -105,16 +82,6 @@
       const normalized = normalizePercent(values[index]);
       if (normalized !== null) {
         return normalized;
-      }
-    }
-    return null;
-  }
-
-  function firstNumber(values) {
-    for (let index = 0; index < values.length; index += 1) {
-      const value = numberOrNull(values[index]);
-      if (value !== null) {
-        return value;
       }
     }
     return null;

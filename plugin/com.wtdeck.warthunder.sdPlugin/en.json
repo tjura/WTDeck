@@ -5,21 +5,5 @@
   "com.wtdeck.warthunder.gear.toggle": {
     "Name": "Landing Gear",
     "Tooltip": "War Thunder landing gear state and toggle command"
-  },
-  "com.wtdeck.warthunder.flaps.cycle": {
-    "Name": "Flaps",
-    "Tooltip": "War Thunder flap position and cycle command"
-  },
-  "com.wtdeck.warthunder.airbrake.toggle": {
-    "Name": "Airbrake",
-    "Tooltip": "War Thunder airbrake state and toggle command"
-  },
-  "com.wtdeck.warthunder.countermeasures.fire": {
-    "Name": "Countermeasures",
-    "Tooltip": "War Thunder flare/chaff command button"
-  },
-  "com.wtdeck.warthunder.telemetry.status": {
-    "Name": "Flight Status",
-    "Tooltip": "War Thunder live telemetry status tile"
   }
 }

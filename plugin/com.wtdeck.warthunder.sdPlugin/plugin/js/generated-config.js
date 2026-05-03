@@ -4,14 +4,7 @@
     telemetry: {
       baseUrl: "http://127.0.0.1:8111",
       pollIntervalMs: 200,
-      requestTimeoutMs: 120,
-      staleAfterMs: 900,
-      slowPollIntervalMs: 1000
-    },
-    rendering: {
-      canvasSize: 144,
-      titleMode: "image-only",
-      showNumericPercent: true
+      requestTimeoutMs: 120
     },
     commands: {
       defaultAdapter: "companion-http",

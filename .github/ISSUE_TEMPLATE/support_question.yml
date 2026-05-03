@@ -5,14 +5,14 @@ body:
   - type: markdown
     attributes:
       value: |
-        Please check README.md, docs/configuration.md, and docs/troubleshooting.md first.
+        Please check README.md, plugin/README.md, docs/war-thunder-plugin-architecture.md, and docs/streamdock-input-lessons.md first.
 
         For security issues, do not use this form. Follow SECURITY.md instead.
   - type: input
     id: environment
     attributes:
       label: Environment
-      placeholder: Windows version, Stream Controller version, War Thunder status
+      placeholder: Windows version, Stream Dock version, War Thunder status, WTDeck commit
     validations:
       required: true
   - type: textarea

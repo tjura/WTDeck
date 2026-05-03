@@ -9,11 +9,12 @@ The package source is `plugin/com.wtdeck.warthunder.sdPlugin`.
 Key files:
 
 - `manifest.json` declares the official Stream Dock plugin package, actions, icons, code path, and property inspector.
-- `config/defaults.json` stores polling, rendering, and command adapter defaults.
+- `config/defaults.json` stores telemetry polling and command adapter defaults.
 - `config/actions.json` is the action contract: each action has a Stream Dock UUID, telemetry mapping, thresholds, state labels, and command intent.
 - `plugin/index.html` loads the Stream Dock runtime.
 - `plugin/js/war-thunder-client.js` polls War Thunder at `http://127.0.0.1:8111`.
-- `plugin/js/state-machines.js` turns raw telemetry percentages into cockpit states such as `UP`, `DOWN`, `TRANSIT`, `FULL`, or `OFFLINE`.
+- `plugin/js/state-machines.js` turns the landing gear telemetry percentage into
+  cockpit states such as `UP`, `DOWN`, `TRANSIT`, `NO FLIGHT`, or `OFFLINE`.
 - `plugin/js/key-renderer.js` generates per-key SVG images dynamically, so the button face can react every telemetry tick.
 - `plugin/js/action-runtime.js` owns Stream Dock events, context tracking, polling, rendering, and command dispatch.
 - `property-inspector/` lets the user choose command adapter, binding label, companion URL, and telemetry inversion.
@@ -23,7 +24,8 @@ Key files:
 1. Stream Dock loads `plugin/index.html` from `manifest.json`.
 2. `connectElgatoStreamDeckSocket(...)` opens the SDK WebSocket and registers the plugin.
 3. The runtime starts polling War Thunder `/state` and `/indicators`.
-4. Raw telemetry is normalized into a snapshot with fields like `gearPercent`, `flapsPercent`, `airbrakePercent`, `iasKmh`, `altitudeM`, and `mach`.
+4. Raw telemetry is normalized into a snapshot with `gearPercent` and connection
+   validity fields.
 5. Each visible Stream Dock key gets a cockpit model based on its action definition.
 6. The renderer produces a complete SVG key face and sends it through `setImage`.
 7. When a key is pressed, the runtime sends the configured command intent through a command adapter.
@@ -108,7 +110,7 @@ responsible for UI, settings, telemetry, and command intent.
 
 ## Packaging And Validation
 
-Validate the scaffold:
+Validate the plugin:
 
 ```powershell
 .\scripts\validate-plugin.ps1

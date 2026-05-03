@@ -90,12 +90,9 @@
   }
 
   function normalizeAdapter(adapter) {
-    if (!adapter || adapter === "native-streamdock-hotkey") {
-      return "companion-http";
+    if (adapter === "companion-http" || adapter === "none") {
+      return adapter;
     }
-    if (adapter === "unassigned") {
-      return "none";
-    }
-    return adapter;
+    return "companion-http";
   }
 })();

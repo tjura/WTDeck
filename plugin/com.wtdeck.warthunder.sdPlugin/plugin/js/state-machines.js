@@ -20,10 +20,6 @@
     const valid = Boolean(telemetry && telemetry.valid);
     const inverted = Boolean(settings && settings.invertTelemetry);
 
-    if (actionDefinition.kind === "status") {
-      return statusModel(telemetry);
-    }
-
     if (!connected || !valid) {
       return {
         actionId: actionId,
@@ -33,18 +29,6 @@
         valueText: "",
         percent: null,
         tone: "offline"
-      };
-    }
-
-    if (actionDefinition.kind === "momentary") {
-      return {
-        actionId: actionId,
-        connected: connected,
-        statusKey: "ready",
-        statusText: actionDefinition.states.ready || "READY",
-        valueText: commandLabel(actionDefinition, settings),
-        percent: null,
-        tone: "armed"
       };
     }
 
@@ -64,32 +48,6 @@
       valueText: percent === null ? "" : Math.round(percent) + "%",
       percent: percent,
       tone: toneForState(stateKey)
-    };
-  }
-
-  function statusModel(telemetry) {
-    const connected = Boolean(telemetry && telemetry.connected);
-    if (!connected) {
-      return {
-        actionId: "status",
-        connected: false,
-        statusKey: "unknown",
-        statusText: "OFFLINE",
-        valueText: "8111",
-        tone: "offline"
-      };
-    }
-
-    const speed = telemetry.iasKmh === null ? "--" : Math.round(telemetry.iasKmh);
-    const altitude = telemetry.altitudeM === null ? "--" : Math.round(telemetry.altitudeM);
-    return {
-      actionId: "status",
-      connected: true,
-      statusKey: telemetry.valid ? "on" : "off",
-      statusText: telemetry.valid ? "LIVE" : "WAIT",
-      valueText: speed + " km/h",
-      subValueText: altitude + " m",
-      tone: telemetry.valid ? "live" : "standby"
     };
   }
 
@@ -126,13 +84,6 @@
       return "dark";
     }
     return "offline";
-  }
-
-  function commandLabel(actionDefinition, settings) {
-    if (settings && settings.hotkeyLabel) {
-      return settings.hotkeyLabel;
-    }
-    return actionDefinition.command.defaultHotkeyLabel || "";
   }
 
   window.WTDeckStateMachines = {

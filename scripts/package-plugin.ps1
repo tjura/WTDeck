@@ -1,3 +1,11 @@
+<#
+.SYNOPSIS
+Creates a distributable zip for the WTDeck Stream Dock plugin.
+
+.DESCRIPTION
+Runs package validation, creates `dist/` when needed, and writes
+`dist/com.wtdeck.warthunder.sdPlugin.zip` from the current plugin source.
+#>
 $ErrorActionPreference = "Stop"
 
 $repoRoot = Split-Path -Parent $PSScriptRoot

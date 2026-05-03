@@ -65,13 +65,12 @@ http://127.0.0.1:34911/health
 - `plugin/com.wtdeck.warthunder.sdPlugin/` - Stream Dock plugin package source.
 - `scripts/` - validation, packaging, deployment, telemetry, and companion tools.
 - `docs/` - research notes, architecture, telemetry, and live-test lessons.
-- `assets/` - legacy assets only when they are still needed by the current
-  implementation.
 
 ## Key Documentation
 
 - [War Thunder plugin architecture](docs/war-thunder-plugin-architecture.md)
 - [Stream Dock input lessons](docs/streamdock-input-lessons.md)
+- [Project quality review](docs/project-quality-review.md)
 - [War Thunder localhost telemetry research](docs/war-thunder-localhost-telemetry.md)
 - [StreamDock plugin development research](docs/streamdock-plugin-development.md)
 

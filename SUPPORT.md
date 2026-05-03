@@ -6,6 +6,8 @@ Please check the existing documentation first:
 
 - [README.md](README.md)
 - [CONTRIBUTING.md](CONTRIBUTING.md)
+- [plugin/README.md](plugin/README.md)
+- [docs/streamdock-input-lessons.md](docs/streamdock-input-lessons.md)
 
 ## Where to ask for help
 
@@ -21,6 +23,7 @@ When reporting a problem, include:
 - what you expected to happen
 - what actually happened
 - steps to reproduce the problem, if known
+- WTDeck commit, Stream Dock version, Windows version, and War Thunder status
 - any relevant screenshots, notes, or examples
 
 ## Security issues

@@ -6,6 +6,10 @@ This folder contains the source package for the Stream Dock plugin:
 
 The plugin is browser-runtime based. It connects to Stream Dock through the SDK WebSocket and polls War Thunder's local telemetry server at `http://127.0.0.1:8111`.
 
+Version `0.1.0` exposes only the `Landing Gear` action. New cockpit controls
+should not be added to the manifest until their telemetry, rendering, command
+path, and live-test notes are complete.
+
 ## Layout
 
 - `com.wtdeck.warthunder.sdPlugin/manifest.json` - Stream Dock manifest.

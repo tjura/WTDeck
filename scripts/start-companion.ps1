@@ -1,3 +1,12 @@
+<#
+.SYNOPSIS
+Starts, stops, or restarts the local WTDeck key sender companion.
+
+.DESCRIPTION
+The companion listens on localhost and accepts WTDeck command intents from the
+Stream Dock plugin. It translates key down, key up, or tap phases into Win32
+SendInput scan-code keyboard events for the focused game window.
+#>
 param(
     [switch] $Worker,
     [switch] $Stop,

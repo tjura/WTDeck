@@ -1,3 +1,12 @@
+<#
+.SYNOPSIS
+Checks War Thunder localhost telemetry for the current Landing Gear action.
+
+.DESCRIPTION
+Calls `/state` and `/indicators`, prints only the connection status and landing
+gear fields used by the plugin, and fails clearly when War Thunder telemetry is
+unavailable.
+#>
 param(
     [string] $BaseUrl
 )
