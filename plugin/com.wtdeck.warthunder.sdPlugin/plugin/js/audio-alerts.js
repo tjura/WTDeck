@@ -2,6 +2,7 @@
   class AudioAlerts {
     constructor() {
       this.audioContext = null;
+      this.activeAudioFiles = [];
     }
 
     playAlert(pattern, options) {
@@ -89,6 +90,9 @@
       try {
         const audio = new Audio(options.src);
         audio.volume = clamp(numberOrDefault(options.volume, 0.85), 0.0001, 1);
+        this.activeAudioFiles.push(audio);
+        audio.addEventListener("ended", () => this.removeAudioFile(audio));
+        audio.addEventListener("error", () => this.removeAudioFile(audio));
         const playResult = audio.play();
         if (playResult && playResult.catch) {
           playResult.catch(() => {});
@@ -96,6 +100,39 @@
         return true;
       } catch (_error) {
         return false;
+      }
+    }
+
+    removeAudioFile(audio) {
+      const index = this.activeAudioFiles.indexOf(audio);
+      if (index >= 0) {
+        this.activeAudioFiles.splice(index, 1);
+      }
+    }
+
+    stopAll() {
+      if (window.speechSynthesis && window.speechSynthesis.cancel) {
+        window.speechSynthesis.cancel();
+      }
+
+      this.activeAudioFiles.forEach((audio) => {
+        try {
+          audio.pause();
+          audio.currentTime = 0;
+          audio.src = "";
+          audio.load();
+        } catch (_error) {
+          // Nothing useful to report if the browser already released the element.
+        }
+      });
+      this.activeAudioFiles = [];
+
+      if (this.audioContext && this.audioContext.close) {
+        const audioContext = this.audioContext;
+        this.audioContext = null;
+        audioContext.close().catch(() => {});
+      } else {
+        this.audioContext = null;
       }
     }
 

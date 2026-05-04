@@ -30,7 +30,9 @@ Key files:
 4. Raw telemetry is normalized into a snapshot with fields such as
    `gearPercent`, `airbrakePercent`, `flapsPercent`, `gForce`, `iasKmh`,
    `tasKmh`, `throttlePercent`, `altitudeMeters`, `radarAltitudeMeters`, and
-   connection validity.
+   connection validity. The snapshot also exposes `activeFlight` and
+   `inactiveReason`; `activeFlight` is stricter than raw War Thunder `valid`
+   because it requires a current air vehicle and core flight fields.
 5. Each visible Stream Dock key gets a cockpit model based on its action definition.
 6. The renderer produces a complete SVG key face and sends it through `setImage`.
 7. When a key is pressed, the runtime sends the configured command intent through a command adapter.
@@ -58,13 +60,15 @@ The current manifest exposes ten cockpit actions:
   but sends the configured `ID_FLAPS_DOWN` binding. War Thunder flap controls
   are detent-step commands, so WTDeck exposes directional actions rather than a
   flap toggle.
-- `Drogue Chute`: sends the configured drogue chute binding through the WTDeck
-  companion only when the latest model is `READY`. It renders `READY`, `FAST`,
-  `AIR`, `OFFLINE`, or `NO FLIGHT`. War Thunder localhost telemetry does not
-  expose structured chute deployed/released state, so this action uses IAS and
-  radar altitude to allow only a conservative landing-use envelope. Its
-  optional auto landing assist adds `ARM`, `BRK`, `DRG`, and `STOP` phases while
-  it holds wheel brake after touchdown and deploys Drogue once.
+- `Auto Landing`: arms or cancels an optional landing assist when enabled. It
+  can extend landing gear before landing when the gear is confirmed up and speed
+  is at or below `350 km/h`; it then holds wheel brake after touchdown and
+  releases brake after stop. Drogue deploy is optional: WTDeck sends the
+  configured chute binding only when the latest readiness model is `READY`,
+  based on IAS and radar altitude, because War Thunder localhost telemetry does
+  not expose structured chute deployed/released state. The button renders
+  `READY`, `FAST`, `AIR`, `ARM`, `BRK`, `DRG`, `STOP`, `OFFLINE`, or
+  `NO FLIGHT` depending on telemetry and assist phase.
 - `Fire Flares`: sends the configured War Thunder `Fire flares` binding through
   the WTDeck companion and renders `READY`, `OFFLINE`, or `NO FLIGHT`. It is a
   separate command from `Fire countermeasures` and `Switch countermeasures`, and
@@ -118,13 +122,27 @@ The plugin treats `/state` as primary flight telemetry because it exposes most c
 
 The state machines should prefer continuous percentages over binary lamps. Intermediate values are cockpit-relevant and should render as movement, not as stale on/off state.
 
+All user-facing behavior is gated by `activeFlight`, not only by HTTP
+connectivity. When the game is in the hangar, menus, a non-air vehicle, or any
+other inactive state, cockpit actions render `NO FLIGHT`, audio alerts stop,
+auto landing assist is disarmed, fuel burn estimation resets, and command button
+presses are ignored. Key-up releases may still be sent as cleanup so a previously
+held companion command is not left pressed. A valid-looking but empty inert
+aircraft sample is also inactive; War Thunder can leave stale post-flight data
+visible in the hangar with `valid: true`, fuel `0`, no burn, no speed, and no
+engine output. To avoid canceling landing automation on a single
+`/indicators` timeout, the client can reuse the last confirmed air identity for
+up to five missed identity polls, capped at 1.5 seconds, while `/state` remains
+valid and the empty-aircraft hangar signature is not present.
+
 No current `/state` or `/indicators` field has been found for drogue chute
 deployed/released state, flare or chaff count, selected countermeasure mode, or
 countermeasure release confirmation. These command-only buttons must not infer
-action success from missing telemetry. Drogue Chute may use speed and radar
-altitude as command-readiness gates; countermeasure buttons should only show
-whether War Thunder flight telemetry is valid enough for the command to be
-relevant.
+action success from missing telemetry. Auto Landing uses speed and radar
+altitude as optional chute command-readiness gates, but gear and brake
+automation remain available without chute readiness. Countermeasure buttons
+should only show whether War Thunder active-flight telemetry is valid enough for
+the command to be relevant.
 
 ## Command Dispatch
 
@@ -148,9 +166,11 @@ Stream Dock keyUp   -> companion phase "up"   -> Win32 key up
 
 The companion resolves the configured binding label, currently `G` for Landing
 Gear, `H` for Air Brake, `PageUp` for Flaps Up, `PageDown` for Flaps Down, and
-`Shift+G` for Drogue Chute. Drogue auto landing assist also resolves
-War Thunder's `brake_left_rangeMax` / `brake_right_rangeMax` controls, default
-`B`, as a secondary hold-style command. Fire Flares and Fire Chaff have no
+`Shift+G` for Auto Landing's optional chute deploy. Auto Landing assist also
+resolves War Thunder's `ID_GEAR` control, default `G`, for one-shot gear
+extension before landing and `brake_left_rangeMax` / `brake_right_rangeMax`
+controls, default `B`, as a secondary hold-style brake command. Fire Flares and
+Fire Chaff have no
 bundled defaults; bind War Thunder's separate `Fire
 flares` and `Fire chaff` controls and enter those labels in the property
 inspector. The companion sends scan-code keyboard

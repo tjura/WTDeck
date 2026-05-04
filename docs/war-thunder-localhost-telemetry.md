@@ -90,6 +90,24 @@ On this machine, with War Thunder running, these endpoints responded successfull
 
 Sampling `/state` at 200 ms intervals showed changing altitude and fuel values, so the endpoint is suitable for real-time telemetry. StreamDeck/StreamDock button state updates do not need to poll as quickly as an on-screen flight display; 100 to 250 ms is usually enough for dynamic controls, and 250 to 500 ms is enough for most status indicators.
 
+WTDeck distinguishes raw telemetry validity from an active aircraft session. The
+runtime only treats telemetry as `activeFlight` when `/state` or `/indicators`
+explicitly reports `valid: true`, `/indicators` identifies an air vehicle with
+`army: "air"` and a non-empty `type`, and at least one core flight-dynamics
+field is present. After an air identity has been confirmed, WTDeck allows a
+short grace period for transient `/indicators` misses: up to five missed
+identity polls and no more than 1.5 seconds, as long as `/state` remains valid
+and the empty-aircraft hangar signature is not present. This stricter gate
+prevents hangar, menu, stale, or unsupported vehicle data from keeping alarms,
+command buttons, fuel estimation, or landing automation alive without canceling
+Auto Landing on a single indicator timeout. `/map_info.json` is not used for
+this gate because local tests showed it can report `valid: false` while aircraft
+telemetry is still usable.
+Post-flight hangar samples can still leave `/state` and `/indicators` marked
+valid, so WTDeck also treats an empty inert aircraft sample as inactive when fuel
+is effectively zero, normal initial fuel is known, speed and vertical speed are
+near zero, fuel burn is absent, and engine output is absent or stopped.
+
 ## `/state`
 
 Use this endpoint as the first choice for canonical flight telemetry because many fields include units in their keys.
@@ -460,14 +478,19 @@ Observed result:
 
 WTDeck implementation rule:
 
-1. Treat Drogue Chute as a command action, not a telemetry-confirmed toggle.
+1. Treat optional drogue deploy as a command action, not a telemetry-confirmed
+   toggle.
 2. Render `READY` only when flight telemetry is valid, IAS is at or below
    `350 km/h`, and normalized radar altitude is at or below `10 m`.
 3. Render `FAST`, `AIR`, `NO FLIGHT`, or `OFFLINE` when the command is not
    meaningfully actionable, and do not dispatch the key command in those states.
-4. Optional auto landing assist may use gear percentage, IAS, vertical speed,
-   and radar altitude to detect touchdown, hold the wheel-brake range binding
-   (`brake_left_rangeMax` / `brake_right_rangeMax`), and send `ID_CHUTE` once
+4. Auto Landing assist may use gear percentage, IAS/TAS, throttle,
+   vertical speed, and radar altitude to prepare for touchdown. When armed, it
+   may send `ID_GEAR` once to extend landing gear only if gear telemetry is
+   confirmed up (`<= 5%`) and speed is at or below `350 km/h`; it must not
+   toggle gear when gear is already down, moving, or unknown. It can then hold
+   the wheel-brake range binding
+   (`brake_left_rangeMax` / `brake_right_rangeMax`) and send `ID_CHUTE` once
    readiness gates are satisfied. Because some aircraft report a small
    positive `radio_altitude` while already on the runway, touchdown allows
    normalized `radio_altitude` at or below `3.5 m` with vertical speed stable
@@ -475,8 +498,9 @@ WTDeck implementation rule:
    assist may only use the no-radar rollout fallback with gear down, stable
    vertical speed, idle throttle (`<= 5%`), and speed at or below `260 km/h`.
    If throttle telemetry is missing, the fallback stays speed-only at
-   `140 km/h`. After that fallback activates braking, it may send `ID_CHUTE` without
-   changing the normal Drogue button's incomplete-telemetry state. It must be
+   `140 km/h`. Chute deploy is optional and must still require the normal
+   speed/radar-altitude readiness model; if readiness telemetry is missing, Auto
+   Landing skips `ID_CHUTE` and continues gear/brake automation. It must be
    user-armed and release brake on stop, cancel, telemetry loss, or action
    disappearance.
 5. Do not add `DEPLOYED`, `RELEASED`, or `TRANSIT` states until a structured
@@ -519,7 +543,8 @@ Expect these states:
 
 Implementation rules:
 
-- Always check `valid`.
+- Always check `valid`, then apply WTDeck's stricter `activeFlight` gate before
+  enabling commands, alerts, fuel tracking, or automation.
 - Treat every field as optional.
 - Parse by exact key name, including commas, spaces, and units.
 - Keep raw JSON snapshots during development so missing-field cases can be diagnosed.
@@ -534,7 +559,7 @@ For a StreamDock plugin or companion app:
 | --- | --- | --- |
 | Gear/flaps/airbrake button state | `/state`, fallback `/indicators` | 100 to 250 ms |
 | Drogue chute command readiness | `/state` IAS plus `/indicators` normalized `radio_altitude` | 250 ms |
-| Drogue auto landing assist | `/state` gear, IAS, vertical speed plus normalized `/indicators` `radio_altitude` | 200 to 250 ms |
+| Auto Landing assist | `/state` gear, IAS/TAS, throttle, vertical speed plus normalized `/indicators` `radio_altitude` when available | 200 to 250 ms |
 | Speed, altitude, fuel, G-load display | `/state` | 250 ms |
 | Instrument-specific display values | `/indicators` | 250 ms |
 | Mission status | `/mission.json` | 1000 to 2000 ms |

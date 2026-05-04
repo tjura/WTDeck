@@ -98,6 +98,12 @@ Companion request shape:
 
 The matching release event sends `"phase": "up"`.
 
+WTDeck gates command starts on `activeFlight`, not only HTTP connectivity. In
+hangar, menus, non-air vehicles, or stale telemetry states, command button
+presses are ignored and alerts/automation are stopped. Command releases may
+still be sent as cleanup so a hold-style action cannot remain pressed if flight
+telemetry disappears between key down and key up.
+
 Air Brake uses the same request shape with `"intent": "airbrake-toggle"` and
 default `"hotkeyLabel": "H"`.
 
@@ -107,20 +113,24 @@ Flaps Up and Flaps Down use separate War Thunder controls instead of a toggle:
 render the same live `flaps, %` state, while the command arrow shows the
 direction of the button.
 
-Drogue Chute uses the same request shape with
+Auto Landing keeps the existing optional chute request shape with
 `"intent": "drogue-chute-deploy"` and default `"hotkeyLabel": "Shift+G"`. The
 companion parses modifier combinations, presses modifiers before the main key,
 and releases the main key before modifiers. The plugin dispatches this command
-only while the latest Drogue model is `READY`, which currently means valid
-flight telemetry, IAS at or below `350 km/h`, and normalized radar altitude at
-or below `10 m`.
+only while the optional chute readiness model is `READY`, which currently means
+active aircraft telemetry, IAS at or below `350 km/h`, and normalized radar
+altitude at or below `10 m`.
 
-Drogue Chute can also run an optional user-armed landing assist. In that mode,
-tapping the Drogue key arms or cancels the assist instead of sending an
-immediate manual chute command. After touchdown is confirmed, WTDeck sends
+Auto Landing can run an optional user-armed landing assist. In that mode,
+tapping the key arms or cancels the assist instead of sending an immediate
+manual chute command. While armed, WTDeck can send one
+`"landing-gear-toggle"` tap to extend gear when telemetry confirms gear is up,
+and IAS/TAS is at or below `350 km/h`; it does not toggle gear when gear is
+already down, moving, or unknown. After touchdown is confirmed, WTDeck sends
 `"intent": "wheel-brake"` with the configured wheel brake binding, default `B`,
-as a key-down event, deploys Drogue once its readiness gate is satisfied, and
-sends wheel-brake key-up after the aircraft stops.
+as a key-down event, deploys Drogue only if its readiness gate is satisfied, and
+sends wheel-brake key-up after the aircraft stops. Gear and brake automation do
+not require a Drogue-equipped aircraft.
 With radio altitude available, touchdown confirmation allows a small landing
 gear height offset: normalized `radio_altitude` must be at or below `3.5 m`
 and vertical speed must be stable within `1 m/s`.
@@ -128,9 +138,8 @@ On aircraft that do not expose `radio_altitude`, WTDeck uses a conservative
 rollout fallback. With gear down, idle throttle (`<= 5%`) and stable vertical
 speed, braking can start at or below `260 km/h`; if throttle telemetry is
 missing, WTDeck falls back to the older speed-only `140 km/h` guard. That
-fallback is limited to the armed auto-assist path; the normal Drogue button
-still reports incomplete readiness telemetry instead of claiming a live chute
-state.
+fallback is limited to the armed auto-assist path; the optional chute readiness
+model still reports incomplete telemetry instead of claiming a live chute state.
 
 The property inspector can also call the companion with
 `GET /bindings?actionUuid=...` to auto-fill an empty binding label. The
@@ -155,9 +164,11 @@ Avoid these mistakes:
   action config and let the property inspector override it.
 - Do not edit War Thunder `.blk` files, unpack packaged default presets, or
   overwrite an existing WTDeck binding from detected data.
-- Do not fake command state when War Thunder does not expose telemetry. Drogue
-  Chute may gate command readiness with speed and radar altitude, but it must
-  not claim deployed/released state until a structured chute field is discovered.
+- Do not fake command state when War Thunder does not expose telemetry. Auto
+  Landing may gate optional chute deploy with speed and radar altitude, but it
+  must not claim deployed/released state until a structured chute field is
+  discovered. Gear and brake automation must continue to work when chute
+  readiness is unavailable.
 - Do not leave hold-style automated commands without cleanup. Any auto landing
   assist path that presses wheel brake must release it on stop, cancel, telemetry
   loss, settings changes, or key disappearance.

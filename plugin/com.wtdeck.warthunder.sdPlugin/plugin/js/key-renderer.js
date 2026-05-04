@@ -188,8 +188,17 @@
     const activeOpacity = !active ? "0.34" : blinkingOff ? "0.22" : "1";
     const radarOpacity = !active ? activeOpacity : blinkingOff ? "0.22" : model.radarAltitudeMeters === null ? "0.42" : "1";
     const altitudeOpacity = !active ? activeOpacity : model.altitudeMeters === null ? "0.42" : "1";
+    const preferBaroAltitude = model.radarAltitudeMeters === null && model.altitudeMeters !== null;
+    const primaryLabel = preferBaroAltitude ? "ALT" : "RALT";
+    const primaryText = preferBaroAltitude ? altitudeText : radarText;
+    const primaryOpacity = preferBaroAltitude ? altitudeOpacity : radarOpacity;
+    const secondaryLabel = preferBaroAltitude ? "RALT" : "ALT";
+    const secondaryText = preferBaroAltitude ? radarText : altitudeText;
+    const secondaryOpacity = preferBaroAltitude ? radarOpacity : altitudeOpacity;
     const radarFontSize = readoutFontSize(radarText, 23);
     const altitudeFontSize = readoutFontSize(altitudeText, 17);
+    const primaryFontSize = readoutFontSize(primaryText, 23);
+    const secondaryFontSize = readoutFontSize(secondaryText, 17);
 
     if (alerting) {
       return renderGroundCollisionPanel(
@@ -206,10 +215,10 @@
       '<path d="M62 69h54M62 102h54" stroke="#263139" stroke-width="1"/>',
       '<path d="M65 58h48" stroke="' + palette.accent + '" stroke-width="2" stroke-linecap="round" opacity="' + (active ? "0.28" : "0.12") + '"/>',
       '<path d="M66 112c8-8 15-10 24-7s16 1 25-8" fill="none" stroke="' + palette.accent + '" stroke-width="2" stroke-linecap="round" opacity="' + (active ? "0.30" : "0.12") + '"/>',
-      '<text x="64" y="53" text-anchor="start" fill="#8f9aa1" font-size="8" font-family="Arial, sans-serif" font-weight="700">RALT</text>',
-      '<text x="89" y="80" text-anchor="middle" fill="' + palette.accent + '" font-size="' + radarFontSize + '" font-family="Arial, sans-serif" font-weight="800" opacity="' + radarOpacity + '">' + escapeXml(radarText) + '</text>',
-      '<text x="64" y="96" text-anchor="start" fill="#8f9aa1" font-size="8" font-family="Arial, sans-serif" font-weight="700">ALT</text>',
-      '<text x="91" y="117" text-anchor="middle" fill="#d9dde0" font-size="' + altitudeFontSize + '" font-family="Arial, sans-serif" font-weight="800" opacity="' + altitudeOpacity + '">' + escapeXml(altitudeText) + '</text>'
+      '<text x="64" y="53" text-anchor="start" fill="#8f9aa1" font-size="8" font-family="Arial, sans-serif" font-weight="700">' + primaryLabel + '</text>',
+      '<text x="89" y="80" text-anchor="middle" fill="' + palette.accent + '" font-size="' + primaryFontSize + '" font-family="Arial, sans-serif" font-weight="800" opacity="' + primaryOpacity + '">' + escapeXml(primaryText) + '</text>',
+      '<text x="64" y="96" text-anchor="start" fill="#8f9aa1" font-size="8" font-family="Arial, sans-serif" font-weight="700">' + secondaryLabel + '</text>',
+      '<text x="91" y="117" text-anchor="middle" fill="#d9dde0" font-size="' + secondaryFontSize + '" font-family="Arial, sans-serif" font-weight="800" opacity="' + secondaryOpacity + '">' + escapeXml(secondaryText) + '</text>'
     ].join("");
   }
 
@@ -358,19 +367,57 @@
       statusKey === "brake" ||
       statusKey === "drogue" ||
       statusKey === "stopped";
-    const opacity = active ? "1" : "0.5";
-    const guardStroke = active ? palette.accent : "#3d454a";
+    const bayStroke = active ? palette.accent : "#323b42";
+    const baseOpacity = active ? "1" : "0.45";
+    const gearActive = statusKey === "armed";
+    const brakeActive = statusKey === "brake";
+    const chuteActive = statusKey === "on" || statusKey === "drogue";
+    const stopped = statusKey === "stopped";
+    const gearOpacity = drogueStageOpacity(statusKey, "gear");
+    const brakeOpacity = drogueStageOpacity(statusKey, "brake");
+    const chuteOpacity = drogueStageOpacity(statusKey, "chute");
+    const stopOpacity = stopped ? "1" : "0.22";
 
     return [
-      '<rect x="54" y="38" width="70" height="88" rx="5" fill="#080a0b" stroke="#323b42" stroke-width="1"/>',
-      '<path d="M67 51h46v56H67z" fill="#050607" stroke="' + guardStroke + '" stroke-width="1.5" opacity="' + opacity + '"/>',
-      '<path d="M72 56h36M72 102h36" stroke="#59636b" stroke-width="1" opacity="' + opacity + '"/>',
-      '<path d="M78 62c10-8 25-8 34 0" fill="none" stroke="' + palette.accent + '" stroke-width="3" stroke-linecap="round" opacity="0.32"/>',
-      '<path d="M90 63v32" stroke="' + palette.accent + '" stroke-width="8" stroke-linecap="round" filter="url(#glow)" opacity="' + opacity + '"/>',
-      '<circle cx="90" cy="100" r="16" fill="' + palette.accent + '" filter="url(#glow)" opacity="' + opacity + '"/>',
-      '<circle cx="90" cy="100" r="7" fill="#f9fbfc" opacity="0.58"/>',
-      '<path d="M80 100h20" stroke="#f9fbfc" stroke-width="3" stroke-linecap="round" opacity="0.42"/>'
+      '<rect x="54" y="38" width="70" height="88" rx="5" fill="#080a0b" stroke="' + bayStroke + '" stroke-width="1"/>',
+      '<rect x="61" y="46" width="56" height="72" rx="6" fill="#050607" stroke="#3d454a" stroke-width="1.3" opacity="' + baseOpacity + '"/>',
+      '<path d="M66 60h10M66 84h10M66 108h10" stroke="#59636b" stroke-width="1.1" stroke-linecap="round" opacity="' + baseOpacity + '"/>',
+      '<path d="M75 60v48" stroke="#1b2226" stroke-width="4" stroke-linecap="round" opacity="' + baseOpacity + '"/>',
+      drogueStageLamp(75, 60, palette, gearOpacity, gearActive),
+      drogueStageLamp(75, 84, palette, brakeOpacity, brakeActive),
+      drogueStageLamp(75, 108, palette, chuteOpacity, chuteActive || stopped),
+      '<path d="M91 51v17" stroke="' + palette.accent + '" stroke-width="3" stroke-linecap="round" opacity="' + gearOpacity + '" filter="url(#glow)"/>',
+      '<circle cx="85" cy="69" r="4.3" fill="' + palette.accent + '" opacity="' + gearOpacity + '" filter="url(#glow)"/>',
+      '<circle cx="97" cy="69" r="4.3" fill="' + palette.accent + '" opacity="' + gearOpacity + '" filter="url(#glow)"/>',
+      '<path d="M84 78h28M84 90h28" stroke="' + palette.accent + '" stroke-width="3" stroke-linecap="round" opacity="' + brakeOpacity + '" filter="url(#glow)"/>',
+      '<path d="M89 95c7-6 18-6 25 0" fill="none" stroke="' + palette.accent + '" stroke-width="2.8" stroke-linecap="round" opacity="' + chuteOpacity + '" filter="url(#glow)"/>',
+      '<path d="M102 97v12" stroke="' + palette.accent + '" stroke-width="4" stroke-linecap="round" opacity="' + chuteOpacity + '" filter="url(#glow)"/>',
+      '<circle cx="102" cy="111" r="7" fill="' + palette.accent + '" opacity="' + chuteOpacity + '" filter="url(#glow)"/>',
+      '<path d="M85 116h30" stroke="' + palette.accent + '" stroke-width="2.4" stroke-linecap="round" opacity="' + stopOpacity + '" filter="url(#glow)"/>'
     ].join("");
+  }
+
+  function drogueStageLamp(x, y, palette, opacity, active) {
+    return [
+      '<circle cx="' + x + '" cy="' + y + '" r="5.4" fill="#0c1113" stroke="#3d454a" stroke-width="1"/>',
+      '<circle cx="' + x + '" cy="' + y + '" r="' + (active ? "3.6" : "2.7") + '" fill="' + palette.accent + '" opacity="' + opacity + '" filter="url(#glow)"/>'
+    ].join("");
+  }
+
+  function drogueStageOpacity(statusKey, stage) {
+    if (statusKey === "unknown" || statusKey === "fast" || statusKey === "air") {
+      return "0.18";
+    }
+    if (statusKey === "stopped") {
+      return "0.72";
+    }
+    if (stage === "gear") {
+      return statusKey === "armed" ? "1" : "0.42";
+    }
+    if (stage === "brake") {
+      return statusKey === "brake" ? "1" : statusKey === "drogue" ? "0.62" : "0.30";
+    }
+    return statusKey === "on" || statusKey === "drogue" ? "1" : "0.30";
   }
 
   function renderFlaresControl(palette, statusKey) {

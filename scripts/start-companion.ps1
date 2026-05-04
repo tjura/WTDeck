@@ -747,10 +747,13 @@ function Resolve-WarThunderBinding {
     )
 
     $metadata = Get-ActionBindingMetadata -ActionUuid $ActionUuid
+    $hasControlOverride = -not [string]::IsNullOrWhiteSpace($ControlId) -or
+        -not [string]::IsNullOrWhiteSpace($ControlIds)
+    $defaultControlId = if ($hasControlOverride) { "" } else { $metadata.ControlId }
     $controlIdCandidates = Get-ControlIdCandidates `
         -ControlId $ControlId `
         -ControlIds $ControlIds `
-        -DefaultControlId $metadata.ControlId
+        -DefaultControlId $defaultControlId
     if (@($controlIdCandidates).Count -gt 0) {
         $metadata.ControlId = @($controlIdCandidates) -join ","
     }

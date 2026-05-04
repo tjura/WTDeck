@@ -1,7 +1,7 @@
 # Project Quality Review
 
 This review captures the current cockpit-control baseline after the first
-successful Landing Gear test and the Air Brake, Drogue Chute, Fire Flares,
+successful Landing Gear test and the Air Brake, Auto Landing, Fire Flares,
 Fire Chaff, Flaps Up, Flaps Down, G Force, Speed, and Altitude implementation
 passes.
 
@@ -13,7 +13,7 @@ Version `0.1.0` supports ten Stream Dock actions:
 - `Air Brake`
 - `Flaps Up`
 - `Flaps Down`
-- `Drogue Chute`
+- `Auto Landing`
 - `Fire Flares`
 - `Fire Chaff`
 - `G Force`
@@ -69,12 +69,13 @@ The plugin baseline is intentionally small:
 - ten localization action entries
 - telemetry-normalized fields for control state, G-load, speed, altitude, and
   radar altitude
-- three command-readiness actions for `Drogue Chute`, `Fire Flares`, and
+- three command-readiness actions for optional chute deploy, `Fire Flares`, and
   `Fire Chaff`, which do not fake unavailable deployment or release telemetry;
-  Drogue Chute also blocks dispatch outside its speed/radar-altitude envelope
-- optional user-armed Drogue auto landing assist that holds `wheel-brake` only
+  optional chute deploy also blocks dispatch outside its speed/radar-altitude envelope
+- optional user-armed Auto Landing assist that can extend gear, holds `wheel-brake` only
   after touchdown, or after a conservative no-radar-altitude rollout fallback,
-  and releases it on stop or cleanup
+  skips chute deploy when readiness telemetry is missing, and releases brake on
+  stop or cleanup
 - eight command intents, `landing-gear-toggle`, `airbrake-toggle`, `flaps-up`,
   `flaps-down`, `drogue-chute-deploy`, `wheel-brake`, `fire-flares`, and
   `fire-chaff`

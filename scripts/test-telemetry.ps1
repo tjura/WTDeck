@@ -146,10 +146,14 @@ function Convert-ToPercent {
 function Get-DrogueReadiness {
     param(
         [object] $IasKmh,
-        [object] $RadarAltitudeMeters
+        [object] $RadarAltitudeMeters,
+        [bool] $ActiveFlight = $true
     )
 
     if ($null -eq $IasKmh -or $null -eq $RadarAltitudeMeters) {
+        if ($ActiveFlight) {
+            return "NO DATA"
+        }
         return "NO FLIGHT"
     }
 
@@ -160,6 +164,33 @@ function Get-DrogueReadiness {
         return "FAST"
     }
     return "READY"
+}
+
+function Get-AutoGearCandidate {
+    param(
+        [object] $GearPercent,
+        [object] $IasKmh,
+        [object] $TasKmh
+    )
+
+    if ($null -eq $GearPercent) {
+        return "not ready: missing gear telemetry"
+    }
+    if ([double] $GearPercent -ge 95) {
+        return "already down"
+    }
+    if ([double] $GearPercent -gt 5) {
+        return "waiting: gear in transit"
+    }
+
+    $speedKmh = Get-MaxNumber -Values @($IasKmh, $TasKmh)
+    if ($null -eq $speedKmh) {
+        return "waiting: missing speed telemetry"
+    }
+    if ([double] $speedKmh -gt 350) {
+        return "waiting for speed <= 350 km/h"
+    }
+    return "ready to extend"
 }
 
 function Get-DrogueAutoAssistCandidate {
@@ -221,6 +252,242 @@ function Test-ValidFlight {
     return $null
 }
 
+function Test-NumberFieldPresent {
+    param([object] $Value)
+
+    if ($null -eq $Value) {
+        return $false
+    }
+    if ($Value -is [string] -and $Value -eq "") {
+        return $false
+    }
+
+    try {
+        [void] ([double] $Value)
+        return $true
+    } catch {
+        return $false
+    }
+}
+
+function Convert-ToNumberOrNull {
+    param([object] $Value)
+
+    if ($null -eq $Value) {
+        return $null
+    }
+    if ($Value -is [string] -and $Value -eq "") {
+        return $null
+    }
+
+    try {
+        return [double] $Value
+    } catch {
+        return $null
+    }
+}
+
+function Get-FirstNumber {
+    param([object[]] $Values)
+
+    foreach ($value in $Values) {
+        $number = Convert-ToNumberOrNull -Value $value
+        if ($null -ne $number) {
+            return $number
+        }
+    }
+    return $null
+}
+
+function Get-MaxNumber {
+    param([object[]] $Values)
+
+    $maximum = $null
+    foreach ($value in $Values) {
+        $number = Convert-ToNumberOrNull -Value $value
+        if ($null -ne $number -and ($null -eq $maximum -or $number -gt $maximum)) {
+            $maximum = $number
+        }
+    }
+    return $maximum
+}
+
+function Get-SumMatchingNumberFields {
+    param(
+        [object] $Object,
+        [string] $Pattern
+    )
+
+    if (-not $Object) {
+        return $null
+    }
+
+    $sum = 0.0
+    $found = $false
+    foreach ($property in $Object.PSObject.Properties) {
+        if ($property.Name -notmatch $Pattern) {
+            continue
+        }
+        $number = Convert-ToNumberOrNull -Value $property.Value
+        if ($null -ne $number) {
+            $sum += $number
+            $found = $true
+        }
+    }
+    if ($found) {
+        return $sum
+    }
+    return $null
+}
+
+function Get-MaxMatchingNumberFields {
+    param(
+        [object] $Object,
+        [string] $Pattern
+    )
+
+    if (-not $Object) {
+        return $null
+    }
+
+    $maximum = $null
+    foreach ($property in $Object.PSObject.Properties) {
+        if ($property.Name -notmatch $Pattern) {
+            continue
+        }
+        $number = Convert-ToNumberOrNull -Value $property.Value
+        if ($null -ne $number -and ($null -eq $maximum -or $number -gt $maximum)) {
+            $maximum = $number
+        }
+    }
+    return $maximum
+}
+
+function Test-InactiveAircraftSignature {
+    param(
+        [object] $State,
+        [object] $Indicators
+    )
+
+    $fuelKg = Get-FirstNumber -Values @(
+        (Get-Field -Object $Indicators -Name "fuel"),
+        (Get-Field -Object $State -Name "Mfuel, kg"),
+        (Get-SumMatchingNumberFields -Object $State -Pattern '^Mfuel \d+, kg$')
+    )
+    $initialFuelKg = Get-FirstNumber -Values @(
+        (Get-Field -Object $State -Name "Mfuel0, kg"),
+        (Get-SumMatchingNumberFields -Object $State -Pattern '^Mfuel0 \d+, kg$')
+    )
+    if ($null -eq $fuelKg -or $fuelKg -gt 0.05 -or $null -eq $initialFuelKg -or $initialFuelKg -le 0) {
+        return $false
+    }
+
+    $indicatorSpeed = Convert-ToNumberOrNull -Value (Get-Field -Object $Indicators -Name "speed")
+    if ($null -ne $indicatorSpeed) {
+        $indicatorSpeed *= 3.6
+    }
+    $speedKmh = Get-MaxNumber -Values @(
+        (Get-Field -Object $State -Name "IAS, km/h"),
+        (Get-Field -Object $State -Name "TAS, km/h"),
+        $indicatorSpeed
+    )
+    if ($null -ne $speedKmh -and $speedKmh -gt 5) {
+        return $false
+    }
+
+    $verticalSpeedMps = Get-FirstNumber -Values @(
+        (Get-Field -Object $State -Name "Vy, m/s"),
+        (Get-Field -Object $Indicators -Name "vario")
+    )
+    if ($null -ne $verticalSpeedMps -and [math]::Abs($verticalSpeedMps) -gt 0.2) {
+        return $false
+    }
+
+    $fuelConsume = Convert-ToNumberOrNull -Value (Get-Field -Object $Indicators -Name "fuel_consume")
+    if ($null -ne $fuelConsume -and $fuelConsume -gt 0.05) {
+        return $false
+    }
+
+    $engineOutput = Get-MaxNumber -Values @(
+        (Get-Field -Object $Indicators -Name "rpm"),
+        (Get-Field -Object $Indicators -Name "rpm1"),
+        (Get-Field -Object $Indicators -Name "rpm2"),
+        (Get-Field -Object $Indicators -Name "rpm3"),
+        (Get-Field -Object $Indicators -Name "rpm_min"),
+        (Get-Field -Object $Indicators -Name "rpm1_min"),
+        (Get-Field -Object $Indicators -Name "rpm2_min"),
+        (Get-Field -Object $Indicators -Name "rpm3_min"),
+        (Get-MaxMatchingNumberFields -Object $State -Pattern '^RPM \d+$'),
+        (Get-MaxMatchingNumberFields -Object $State -Pattern '^power \d+, hp$'),
+        (Get-MaxMatchingNumberFields -Object $State -Pattern '^thrust \d+, kgs$'),
+        (Get-MaxMatchingNumberFields -Object $State -Pattern '^efficiency \d+, %$')
+    )
+    return $null -eq $engineOutput -or $engineOutput -le 1
+}
+
+function Test-CoreFlightSample {
+    param(
+        [object] $State,
+        [object] $Indicators
+    )
+
+    $fields = @(
+        (Get-Field -Object $State -Name "IAS, km/h"),
+        (Get-Field -Object $State -Name "TAS, km/h"),
+        (Get-Field -Object $State -Name "H, m"),
+        (Get-Field -Object $State -Name "Vy, m/s"),
+        (Get-Field -Object $State -Name "Ny"),
+        (Get-Field -Object $Indicators -Name "g_meter"),
+        (Get-Field -Object $Indicators -Name "radio_altitude"),
+        (Get-Field -Object $Indicators -Name "vario"),
+        (Get-Field -Object $Indicators -Name "aviahorizon_pitch"),
+        (Get-Field -Object $Indicators -Name "aviahorizon_pitch1"),
+        (Get-Field -Object $Indicators -Name "aviahorizon_roll"),
+        (Get-Field -Object $Indicators -Name "aviahorizon_roll1"),
+        (Get-Field -Object $Indicators -Name "bank")
+    )
+
+    foreach ($field in $fields) {
+        if (Test-NumberFieldPresent -Value $field) {
+            return $true
+        }
+    }
+    return $false
+}
+
+function Test-ActiveFlight {
+    param(
+        [object] $State,
+        [object] $Indicators
+    )
+
+    $stateValid = Get-Field -Object $State -Name "valid"
+    $indicatorsValid = Get-Field -Object $Indicators -Name "valid"
+    $validFlight = Test-ValidFlight -State $State -Indicators $Indicators
+    if ($stateValid -eq $false -or $indicatorsValid -eq $false) {
+        return [pscustomobject]@{ Active = $false; Reason = "invalid telemetry" }
+    }
+    if (-not $validFlight) {
+        return [pscustomobject]@{ Active = $false; Reason = "no telemetry" }
+    }
+    if ($stateValid -ne $true -and $indicatorsValid -ne $true) {
+        return [pscustomobject]@{ Active = $false; Reason = "waiting for flight valid flag" }
+    }
+
+    $army = [string] (Get-Field -Object $Indicators -Name "army")
+    $type = [string] (Get-Field -Object $Indicators -Name "type")
+    if ($army.Trim().ToLowerInvariant() -ne "air" -or [string]::IsNullOrWhiteSpace($type)) {
+        return [pscustomobject]@{ Active = $false; Reason = "no active aircraft" }
+    }
+    if (Test-InactiveAircraftSignature -State $State -Indicators $Indicators) {
+        return [pscustomobject]@{ Active = $false; Reason = "inactive empty aircraft" }
+    }
+    if (-not (Test-CoreFlightSample -State $State -Indicators $Indicators)) {
+        return [pscustomobject]@{ Active = $false; Reason = "no flight dynamics" }
+    }
+    return [pscustomobject]@{ Active = $true; Reason = "" }
+}
+
 Import-DotEnv -Path $envPath
 
 if ([string]::IsNullOrWhiteSpace($BaseUrl)) {
@@ -240,11 +507,16 @@ if (-not $stateResult.Ok -and -not $indicatorsResult.Ok) {
 }
 
 $validFlight = Test-ValidFlight -State $stateResult.Body -Indicators $indicatorsResult.Body
+$activeFlight = Test-ActiveFlight -State $stateResult.Body -Indicators $indicatorsResult.Body
 
 Write-Host "Connected: yes"
 Write-Host "/state: $(if ($stateResult.Ok) { "OK" } else { "FAILED" })"
 Write-Host "/indicators: $(if ($indicatorsResult.Ok) { "OK" } else { "FAILED" })"
 Write-Host "Valid flight: $(if ($null -eq $validFlight) { "unknown" } elseif ($validFlight) { "yes" } else { "no" })"
+Write-Host "Active flight: $(if ($activeFlight.Active) { "yes" } else { "no" })"
+if (-not $activeFlight.Active) {
+    Write-Host "Inactive reason: $($activeFlight.Reason)"
+}
 $gearPercent = Get-Field -Object $stateResult.Body -Name "gear, %"
 Write-Host "state gear, %: $(Format-FieldValue $gearPercent)"
 Write-Host "indicators gears_indicator: $(Format-FieldValue (Get-Field -Object $indicatorsResult.Body -Name "gears_indicator"))"
@@ -257,6 +529,7 @@ Write-Host "state airbrake, %: $(Format-FieldValue (Get-Field -Object $stateResu
 Write-Host "indicators airbrake_indicator: $(Format-FieldValue (Get-Field -Object $indicatorsResult.Body -Name "airbrake_indicator"))"
 Write-Host "indicators airbrake_lever: $(Format-FieldValue (Get-Field -Object $indicatorsResult.Body -Name "airbrake_lever"))"
 $iasKmh = Get-Field -Object $stateResult.Body -Name "IAS, km/h"
+$tasKmh = Get-Field -Object $stateResult.Body -Name "TAS, km/h"
 $throttlePercent = Convert-ToPercent (Get-Field -Object $stateResult.Body -Name "throttle 1, %")
 if ($null -eq $throttlePercent) {
     $throttlePercent = Convert-ToPercent (Get-Field -Object $indicatorsResult.Body -Name "throttle")
@@ -277,6 +550,7 @@ if ($null -ne $fuelKg -and $fuelKg -ne "" -and $null -ne $initialFuelKg -and $in
     }
 }
 Write-Host "state IAS, km/h: $(Format-FieldValue $iasKmh)"
+Write-Host "state TAS, km/h: $(Format-FieldValue $tasKmh)"
 Write-Host "throttle normalized, %: $(Format-FieldValue $throttlePercent)"
 Write-Host "fuel normalized, kg: $(Format-FieldValue $fuelKg)"
 Write-Host "fuel initial, kg: $(Format-FieldValue $initialFuelKg)"
@@ -284,9 +558,15 @@ Write-Host "fuel normalized, %: $(Format-FieldValue $fuelPercent)"
 Write-Host "indicators fuel_consume: $(Format-FieldValue (Get-Field -Object $indicatorsResult.Body -Name "fuel_consume"))"
 Write-Host "state Vy, m/s: $(Format-FieldValue $verticalSpeedMps)"
 Write-Host "indicators radio_altitude normalized: $(Format-Meters $radioAltitudeMeters)"
-Write-Host "drogue chute state: $(Get-DrogueReadiness -IasKmh $iasKmh -RadarAltitudeMeters $radioAltitudeMeters)"
-Write-Host "drogue auto landing assist: $(Get-DrogueAutoAssistCandidate -GearPercent $gearPercent -IasKmh $iasKmh -RadarAltitudeMeters $radioAltitudeMeters -ThrottlePercent $throttlePercent -VerticalSpeedMps $verticalSpeedMps)"
-Write-Host "drogue chute telemetry: deployed/released state is not exposed; WTDeck gates command dispatch by IAS <= 350 km/h and radar altitude <= 10 m"
+Write-Host "optional drogue readiness: $(Get-DrogueReadiness -IasKmh $iasKmh -RadarAltitudeMeters $radioAltitudeMeters -ActiveFlight $activeFlight.Active)"
+if ($activeFlight.Active) {
+    Write-Host "auto gear extension: $(Get-AutoGearCandidate -GearPercent $gearPercent -IasKmh $iasKmh -TasKmh $tasKmh)"
+    Write-Host "auto landing assist: $(Get-DrogueAutoAssistCandidate -GearPercent $gearPercent -IasKmh $iasKmh -RadarAltitudeMeters $radioAltitudeMeters -ThrottlePercent $throttlePercent -VerticalSpeedMps $verticalSpeedMps)"
+} else {
+    Write-Host "auto gear extension: inactive: $($activeFlight.Reason)"
+    Write-Host "auto landing assist: inactive: $($activeFlight.Reason)"
+}
+Write-Host "optional drogue telemetry: deployed/released state is not exposed; Auto Landing skips chute deploy unless IAS <= 350 km/h and radar altitude <= 10 m"
 
 if (-not $stateResult.Ok -or -not $indicatorsResult.Ok) {
     exit 1

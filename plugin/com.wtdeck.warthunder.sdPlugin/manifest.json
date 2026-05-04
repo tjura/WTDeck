@@ -62,7 +62,7 @@
     },
     {
       "Icon": "images/actions/drogue-chute",
-      "Name": "Drogue Chute",
+      "Name": "Auto Landing",
       "PropertyInspectorPath": "property-inspector/index.html",
       "States": [
         {
@@ -72,7 +72,7 @@
         }
       ],
       "SupportedInMultiActions": true,
-      "Tooltip": "War Thunder drogue chute deploy command",
+      "Tooltip": "War Thunder auto landing assist with optional drogue chute deploy",
       "UUID": "com.wtdeck.warthunder.drogue-chute.deploy"
     },
     {

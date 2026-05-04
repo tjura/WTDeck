@@ -26,7 +26,7 @@
   function modelForAction(actionDefinition, telemetry, settings) {
     const actionId = actionDefinition.id;
     const connected = Boolean(telemetry && telemetry.connected);
-    const valid = Boolean(telemetry && telemetry.valid);
+    const valid = Boolean(telemetry && telemetry.activeFlight);
     const inverted = Boolean(settings && settings.invertTelemetry);
 
     if (actionDefinition.id === "speed") {
@@ -318,13 +318,13 @@
 
   function modelForDrogueChute(actionDefinition, telemetry, connected, valid) {
     if (!connected || !valid) {
-      return drogueFallbackModel(actionDefinition, connected);
+      return drogueFallbackModel(actionDefinition, connected, valid);
     }
 
     const iasKmh = numberOrNull(telemetry.iasKmh);
     const radarAltitudeMeters = numberOrNull(telemetry.radarAltitudeMeters);
     if (iasKmh === null || radarAltitudeMeters === null) {
-      return drogueFallbackModel(actionDefinition, connected);
+      return drogueFallbackModel(actionDefinition, connected, valid);
     }
 
     const stateKey = classifyDrogueReadiness(
@@ -342,21 +342,25 @@
       iasKmh: iasKmh,
       radarAltitudeMeters: radarAltitudeMeters,
       tone: stateKey === "on" ? "safe" : "offline",
-      commandReady: stateKey === "on"
+      commandReady: stateKey === "on",
+      activeFlight: valid
     };
   }
 
-  function drogueFallbackModel(actionDefinition, connected) {
+  function drogueFallbackModel(actionDefinition, connected, valid) {
     return {
       actionId: actionDefinition.id,
       connected: connected,
       statusKey: "unknown",
-      statusText: connected ? actionDefinition.states.unknown || "NO FLIGHT" : "OFFLINE",
+      statusText: connected
+        ? valid ? "NO DATA" : actionDefinition.states.unknown || "NO FLIGHT"
+        : "OFFLINE",
       percent: null,
       iasKmh: null,
       radarAltitudeMeters: null,
       tone: "offline",
-      commandReady: false
+      commandReady: false,
+      activeFlight: Boolean(valid)
     };
   }
 

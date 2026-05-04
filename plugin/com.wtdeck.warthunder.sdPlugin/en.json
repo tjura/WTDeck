@@ -19,8 +19,8 @@
     "Tooltip": "War Thunder flaps-down detent command with live flap state"
   },
   "com.wtdeck.warthunder.drogue-chute.deploy": {
-    "Name": "Drogue Chute",
-    "Tooltip": "War Thunder drogue chute deploy command"
+    "Name": "Auto Landing",
+    "Tooltip": "War Thunder auto landing assist with optional drogue chute deploy"
   },
   "com.wtdeck.warthunder.flares.fire": {
     "Name": "Fire Flares",

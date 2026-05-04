@@ -77,7 +77,7 @@ Good examples:
 - `LDG GEAR`
 - `FLAPS`
 - `AIRBRK`
-- `DROGUE`
+- `AUTO LDG`
 - `FUEL`
 - `CANOPY`
 
@@ -139,7 +139,7 @@ It should be larger than the state rail and should visually explain the command:
 - Landing gear: vertical switch or lever
 - Flaps: indexed lever, segmented detents, or multi-position handle
 - Airbrake: guarded push/pull switch or lever
-- Drogue chute: guarded pull handle or release lever
+- Auto landing: staged gear, brake, and optional chute sequence
 - Countermeasures: guarded momentary button
 - Canopy: latch or guarded switch
 

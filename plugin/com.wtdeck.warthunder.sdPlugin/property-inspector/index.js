@@ -173,7 +173,7 @@
       return "Game Binding";
     }
     if (actionDefinition.id === "drogueChute") {
-      return "Drogue Deploy Binding";
+      return "Optional Chute Binding";
     }
     if (actionDefinition.id === "airbrake") {
       return "Air Brake Binding";
@@ -502,7 +502,7 @@
     }
     if (autoAssistEnabled) {
       settingsNote.textContent =
-        "Auto landing assist arms on tap, holds wheel brake after touchdown, and deploys Drogue when speed is in range.";
+        "Auto landing assist arms on tap, can extend landing gear when speed is safe, holds wheel brake after touchdown, and deploys Drogue only when it is available and ready.";
       settingsNote.style.display = "block";
       return;
     }

@@ -11,6 +11,7 @@
       this.lastPollStartedAt = 0;
       this.audioAlerts = window.WTDeckAudioAlerts ? new window.WTDeckAudioAlerts() : null;
       this.lastAlertAtByAction = new Map();
+      this.lastActiveFlight = null;
       this.beforeUnloadHandler = () => this.releaseAllAutoBrakes("unload");
     }
 
@@ -78,7 +79,9 @@
       }
       const actionDefinition = this.actionConfig.actions[context.actionUuid];
       if (fuelAlarmAction(actionDefinition)) {
-        this.acknowledgeFuelAlarm(context);
+        if (isActiveFlightTelemetry(this.telemetry)) {
+          this.acknowledgeFuelAlarm(context);
+        }
         return;
       }
       if (autoAssistEnabled(actionDefinition, context.settings)) {
@@ -115,8 +118,27 @@
       }
       this.lastPollStartedAt = Date.now();
       this.telemetry = await this.client.readSnapshot();
+      this.handleFlightActivityTransition();
       await this.updateAutoAssist();
       this.renderAll();
+    }
+
+    handleFlightActivityTransition() {
+      const activeFlight = isActiveFlightTelemetry(this.telemetry);
+      if (!activeFlight && this.lastActiveFlight !== false) {
+        this.stopInactiveFlightEffects();
+      }
+      this.lastActiveFlight = activeFlight;
+    }
+
+    stopInactiveFlightEffects() {
+      this.lastAlertAtByAction.clear();
+      this.contexts.forEach((context) => {
+        context.fuelAlarm = newFuelAlarmState();
+      });
+      if (this.audioAlerts && this.audioAlerts.stopAll) {
+        this.audioAlerts.stopAll();
+      }
     }
 
     renderAll() {
@@ -160,6 +182,12 @@
         settings.commandAdapter || command.adapter || this.defaults.commands.defaultAdapter
       );
       if (adapter === "none") {
+        return true;
+      }
+      if (phase !== "up" && !isActiveFlightTelemetry(this.telemetry)) {
+        this.bridge.logMessage(
+          "Command '" + command.intent + "' ignored because War Thunder is not in an active flight."
+        );
         return true;
       }
       if (command.requiresReadyState && phase === "down" && !isCommandModelReady(context && context.model)) {
@@ -241,8 +269,8 @@
       }
     }
 
-    async sendCompanionTap(settings, intent, hotkeyLabel) {
-      return this.sendCompanionCommand(settings, intent, hotkeyLabel, "tap");
+    async sendCompanionTap(settings, intent, hotkeyLabel, binding) {
+      return this.sendCompanionCommand(settings, intent, hotkeyLabel, "tap", binding);
     }
 
     acknowledgeFuelAlarm(context) {
@@ -257,6 +285,12 @@
     }
 
     async toggleAutoAssist(actionDefinition, context) {
+      if (!isActiveFlightTelemetry(this.telemetry)) {
+        await this.disarmAutoAssist(actionDefinition, context, "inactive flight");
+        context.renderKey = "";
+        this.renderContext(context.contextId);
+        return true;
+      }
       if (autoAssistArmed(context)) {
         await this.disarmAutoAssist(actionDefinition, context, "manual");
       } else {
@@ -288,8 +322,8 @@
       }
 
       const telemetry = this.telemetry || {};
-      if (!telemetry.connected || !telemetry.valid) {
-        await this.disarmAutoAssist(actionDefinition, context, "telemetry");
+      if (!isActiveFlightTelemetry(telemetry)) {
+        await this.disarmAutoAssist(actionDefinition, context, "inactive flight");
         return;
       }
 
@@ -311,6 +345,23 @@
       ) {
         await this.disarmAutoAssist(actionDefinition, context, "airborne");
         return;
+      }
+
+      if (!state.gearSent && autoAssistGearReady(thresholds, gearPercent, speedKmh)) {
+        const gearIntent = assist.gearIntent || "landing-gear-toggle";
+        const gearBinding = await this.resolveAutoGearBinding(actionDefinition, context);
+        const sent = await this.sendCompanionTap(
+          context.settings,
+          gearIntent,
+          gearBinding.hotkeyLabel,
+          gearBinding
+        );
+        if (sent) {
+          state.gearSent = true;
+          this.bridge.logMessage("Auto landing assist extended landing gear.");
+        } else {
+          this.bridge.logMessage("Auto landing assist failed to extend landing gear.");
+        }
       }
 
       const touchdownCandidate = isTouchdownCandidate(
@@ -367,7 +418,7 @@
       if (
         state.brakeActive &&
         !state.drogueSent &&
-        autoAssistDrogueReady(actionDefinition, baseModel, this.telemetry)
+        autoAssistDrogueReady(baseModel)
       ) {
         const command = actionDefinition.command || {};
         const drogueHotkeyLabel = effectiveHotkeyLabel(actionDefinition, context.settings);
@@ -426,6 +477,22 @@
         this.bridge.logMessage("Auto landing assist released brake: " + reason + ".");
       }
       return sent;
+    }
+
+    async resolveAutoGearBinding(actionDefinition, context) {
+      const assist = landingAssistConfig(actionDefinition);
+      const defaultLabel = assist && assist.defaultGearHotkeyLabel
+        ? String(assist.defaultGearHotkeyLabel).trim()
+        : "";
+      const detectedBinding = await this.lookupCompanionBinding(context, {
+        controlId: assist && assist.gearWarThunderControlId,
+        defaultHotkeyLabel: defaultLabel,
+        intent: assist && assist.gearIntent ? assist.gearIntent : "landing-gear-toggle"
+      });
+      if (detectedBinding && detectedBinding.hotkeyLabel) {
+        return detectedBinding;
+      }
+      return { hotkeyLabel: defaultLabel, scanCodes: [] };
     }
 
     async resolveAutoBrakeBinding(actionDefinition, context) {
@@ -505,6 +572,9 @@
       if (!this.audioAlerts || !alertSoundsEnabled(actionDefinition, settings)) {
         return;
       }
+      if (!isActiveFlightTelemetry(this.telemetry)) {
+        return;
+      }
 
       const alert = alertForModel(actionDefinition, model);
       if (!alert) {
@@ -544,6 +614,7 @@
       brakeActive: false,
       brakeHotkeyLabel: "",
       brakeScanCodes: [],
+      gearSent: false,
       drogueSent: false,
       touchdownCandidateSince: 0,
       touchdownSamples: 0,
@@ -582,14 +653,25 @@
     return Boolean(state && (state.armed || state.brakeActive));
   }
 
+  function isActiveFlightTelemetry(telemetry) {
+    return Boolean(telemetry && telemetry.activeFlight);
+  }
+
   function displayModelForAutoAssist(actionDefinition, context, baseModel) {
     if (!autoAssistEnabled(actionDefinition, context.settings)) {
+      return baseModel;
+    }
+    if (!baseModel || baseModel.connected === false) {
       return baseModel;
     }
 
     const state = context.autoAssist || {};
     const now = Date.now();
-    if (state.stoppedDisplayUntil && state.stoppedDisplayUntil > now) {
+    const showingStopped = state.stoppedDisplayUntil && state.stoppedDisplayUntil > now;
+    if (baseModel.statusKey === "unknown" && !state.armed && !showingStopped) {
+      return baseModel;
+    }
+    if (showingStopped) {
       return autoAssistStatusModel(actionDefinition, baseModel, "stopped", "safe");
     }
     if (!state.armed) {
@@ -658,6 +740,8 @@
     const thresholds = assist && assist.thresholds ? assist.thresholds : {};
     return {
       gearDownMinPercent: thresholdNumber(thresholds, "gearDownMinPercent", 95),
+      gearUpMaxPercent: thresholdNumber(thresholds, "gearUpMaxPercent", 5),
+      autoGearMaxSpeedKmh: thresholdNumber(thresholds, "autoGearMaxSpeedKmh", 350),
       touchdownRadarAltitudeMeters: thresholdNumber(thresholds, "touchdownRadarAltitudeMeters", 2),
       touchdownMaxIasKmh: thresholdNumber(thresholds, "touchdownMaxIasKmh", 380),
       noRadarTouchdownMaxSpeedKmh: thresholdNumber(thresholds, "noRadarTouchdownMaxSpeedKmh", 260),
@@ -669,6 +753,13 @@
       stoppedSpeedKmh: thresholdNumber(thresholds, "stoppedSpeedKmh", 8),
       stoppedHoldMs: thresholdNumber(thresholds, "stoppedHoldMs", 1000)
     };
+  }
+
+  function autoAssistGearReady(thresholds, gearPercent, speedKmh) {
+    return gearPercent !== null &&
+      gearPercent <= thresholds.gearUpMaxPercent &&
+      speedKmh !== null &&
+      speedKmh <= thresholds.autoGearMaxSpeedKmh;
   }
 
   function isTouchdownCandidate(
@@ -701,18 +792,8 @@
       Math.abs(numberOrDefault(verticalSpeedMps, 0)) <= thresholds.stableVerticalSpeedAbsMps;
   }
 
-  function autoAssistDrogueReady(actionDefinition, baseModel, telemetry) {
-    if (baseModel && baseModel.commandReady === true) {
-      return true;
-    }
-    const radarAltitudeMeters = numberOrNull(telemetry && telemetry.radarAltitudeMeters);
-    if (radarAltitudeMeters !== null) {
-      return false;
-    }
-    const iasKmh = numberOrNull(telemetry && telemetry.iasKmh);
-    const thresholds = actionDefinition.thresholds || {};
-    const maxReadyIasKmh = thresholdNumber(thresholds, "maxReadyIasKmh", 350);
-    return iasKmh !== null && iasKmh <= maxReadyIasKmh;
+  function autoAssistDrogueReady(baseModel) {
+    return Boolean(baseModel && baseModel.commandReady === true);
   }
 
   function companionBindingUrl(settings, defaults, actionUuid, bindingOverride) {

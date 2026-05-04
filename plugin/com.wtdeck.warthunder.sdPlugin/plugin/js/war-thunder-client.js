@@ -1,10 +1,15 @@
 (function () {
+  const AIR_IDENTITY_GRACE_MS = 1500;
+  const AIR_IDENTITY_GRACE_MISSES = 5;
+
   class WarThunderClient {
     constructor(options) {
       this.baseUrl = trimSlash(options.baseUrl || "http://127.0.0.1:8111");
       this.requestTimeoutMs = options.requestTimeoutMs || 120;
       this.lastGoodAt = 0;
       this.lastError = null;
+      this.lastActiveAircraftIdentity = null;
+      this.aircraftIdentityMisses = 0;
       this.lastRadarAltitudeSample = null;
       this.radarClosureRateMps = null;
       this.fuelSamples = [];
@@ -32,6 +37,7 @@
       } else {
         this.lastError = stateResult.reason || indicatorsResult.reason || new Error("No telemetry");
       }
+      this.updateAircraftIdentity(indicators, state, now);
 
       const snapshot = normalizeSnapshot({
         connected: connected,
@@ -39,6 +45,7 @@
         lastGoodAt: this.lastGoodAt,
         state: state || {},
         indicators: indicators || {},
+        aircraftIdentityFallback: this.recentAircraftIdentityFallback(now),
         error: this.lastError
       });
       return this.enrichDerivedTelemetry(snapshot);
@@ -61,13 +68,55 @@
       }
     }
 
+    updateAircraftIdentity(indicators, state, readAt) {
+      const identity = activeAircraftIdentity(indicators);
+      if (identity) {
+        this.lastActiveAircraftIdentity = {
+          army: identity.army,
+          type: identity.type,
+          seenAt: readAt
+        };
+        this.aircraftIdentityMisses = 0;
+        return;
+      }
+
+      if (
+        hasExplicitNonAirIdentity(indicators) ||
+        (indicators && indicators.valid === false) ||
+        !state
+      ) {
+        this.lastActiveAircraftIdentity = null;
+        this.aircraftIdentityMisses = AIR_IDENTITY_GRACE_MISSES + 1;
+        return;
+      }
+
+      this.aircraftIdentityMisses += 1;
+    }
+
+    recentAircraftIdentityFallback(readAt) {
+      if (!this.lastActiveAircraftIdentity) {
+        return null;
+      }
+      if (this.aircraftIdentityMisses > AIR_IDENTITY_GRACE_MISSES) {
+        return null;
+      }
+      if (readAt - this.lastActiveAircraftIdentity.seenAt > AIR_IDENTITY_GRACE_MS) {
+        return null;
+      }
+      return {
+        army: this.lastActiveAircraftIdentity.army,
+        type: this.lastActiveAircraftIdentity.type,
+        source: "last-known"
+      };
+    }
+
     enrichDerivedTelemetry(snapshot) {
       this.enrichFuelTelemetry(snapshot);
 
       const radarAltitudeMeters = numberOrNull(snapshot.radarAltitudeMeters);
       const readAt = Number.isFinite(snapshot.readAt) ? snapshot.readAt : Date.now();
 
-      if (!snapshot.connected || !snapshot.valid || radarAltitudeMeters === null) {
+      if (!snapshot.connected || !snapshot.activeFlight || radarAltitudeMeters === null) {
         this.lastRadarAltitudeSample = null;
         this.radarClosureRateMps = null;
         snapshot.derivedSinkRateMps = null;
@@ -129,7 +178,7 @@
       snapshot.fuelDropWindowKg = null;
       snapshot.fuelSessionId = this.fuelSessionId;
 
-      if (!snapshot.connected || !snapshot.valid || fuelKg === null) {
+      if (!snapshot.connected || !snapshot.activeFlight || fuelKg === null) {
         if (this.fuelTrackingActive || this.fuelSamples.length > 0) {
           this.resetFuelEstimate(true);
         }
@@ -266,6 +315,15 @@
   function normalizeSnapshot(raw) {
     const state = raw.state || {};
     const indicators = raw.indicators || {};
+    const aircraftIdentity = activeAircraftIdentity(indicators) ||
+      raw.aircraftIdentityFallback ||
+      null;
+    const flightStatus = classifyActiveFlight(
+      state,
+      indicators,
+      raw.connected,
+      aircraftIdentity
+    );
     const gearPercent = firstPercent([
       state["gear, %"],
       indicators.gears_indicator,
@@ -334,14 +392,16 @@
 
     return {
       connected: raw.connected,
-      valid: isFlightTelemetryValid(state, indicators, raw.connected),
+      valid: flightStatus.valid,
+      activeFlight: flightStatus.activeFlight,
+      inactiveReason: flightStatus.inactiveReason,
       readAt: raw.readAt,
       lastGoodAt: raw.lastGoodAt,
       state: state,
       indicators: indicators,
       errorMessage: raw.error ? raw.error.message : "",
-      aircraftType: indicators.type || "",
-      army: indicators.army || "",
+      aircraftType: aircraftIdentity ? aircraftIdentity.type : indicators.type || "",
+      army: aircraftIdentity ? aircraftIdentity.army : indicators.army || "",
       gearPercent: gearPercent,
       airbrakePercent: airbrakePercent,
       flapsPercent: flapsPercent,
@@ -451,6 +511,191 @@
 
   function settledValue(result) {
     return result.status === "fulfilled" ? result.value : null;
+  }
+
+  function classifyActiveFlight(state, indicators, connected, aircraftIdentity) {
+    const valid = isFlightTelemetryValid(state, indicators, connected);
+    if (!connected) {
+      return {
+        valid: false,
+        activeFlight: false,
+        inactiveReason: "offline"
+      };
+    }
+    if (state.valid === false || indicators.valid === false) {
+      return {
+        valid: false,
+        activeFlight: false,
+        inactiveReason: "invalid telemetry"
+      };
+    }
+    if (!valid) {
+      return {
+        valid: false,
+        activeFlight: false,
+        inactiveReason: "no telemetry"
+      };
+    }
+    if (state.valid !== true && indicators.valid !== true) {
+      return {
+        valid: valid,
+        activeFlight: false,
+        inactiveReason: "waiting for flight valid flag"
+      };
+    }
+    if (hasInactiveAircraftSignature(state, indicators)) {
+      return {
+        valid: valid,
+        activeFlight: false,
+        inactiveReason: "inactive empty aircraft"
+      };
+    }
+    if (!aircraftIdentity) {
+      return {
+        valid: valid,
+        activeFlight: false,
+        inactiveReason: "no active aircraft"
+      };
+    }
+    if (!hasCoreFlightSample(state, indicators)) {
+      return {
+        valid: valid,
+        activeFlight: false,
+        inactiveReason: "no flight dynamics"
+      };
+    }
+    return {
+      valid: true,
+      activeFlight: true,
+      inactiveReason: ""
+    };
+  }
+
+  function activeAircraftIdentity(indicators) {
+    const source = indicators || {};
+    const army = typeof source.army === "string"
+      ? source.army.trim().toLowerCase()
+      : "";
+    const type = typeof source.type === "string"
+      ? source.type.trim()
+      : "";
+    if (army === "air" && type.length > 0) {
+      return {
+        army: army,
+        type: type,
+        source: "indicators"
+      };
+    }
+    return null;
+  }
+
+  function hasExplicitNonAirIdentity(indicators) {
+    const source = indicators || {};
+    const army = typeof source.army === "string"
+      ? source.army.trim().toLowerCase()
+      : "";
+    return Boolean(army && army !== "air");
+  }
+
+  function hasInactiveAircraftSignature(state, indicators) {
+    const fuelKg = firstNumber([
+      indicators.fuel,
+      state["Mfuel, kg"],
+      sumMatchingNumberFields(state, /^Mfuel \d+, kg$/)
+    ]);
+    const initialFuelKg = firstNumber([
+      state["Mfuel0, kg"],
+      sumMatchingNumberFields(state, /^Mfuel0 \d+, kg$/)
+    ]);
+    if (fuelKg === null || fuelKg > 0.05 || initialFuelKg === null || initialFuelKg <= 0) {
+      return false;
+    }
+
+    const speedKmh = maxNumber([
+      state["IAS, km/h"],
+      state["TAS, km/h"],
+      multiplyNumber(indicators.speed, 3.6)
+    ]);
+    if (speedKmh !== null && speedKmh > 5) {
+      return false;
+    }
+
+    const verticalSpeedMps = firstNumber([
+      state["Vy, m/s"],
+      indicators.vario
+    ]);
+    if (verticalSpeedMps !== null && Math.abs(verticalSpeedMps) > 0.2) {
+      return false;
+    }
+
+    const fuelConsume = firstNumber([indicators.fuel_consume]);
+    if (fuelConsume !== null && fuelConsume > 0.05) {
+      return false;
+    }
+
+    const engineOutput = maxNumber([
+      indicators.rpm,
+      indicators.rpm1,
+      indicators.rpm2,
+      indicators.rpm3,
+      indicators.rpm_min,
+      indicators.rpm1_min,
+      indicators.rpm2_min,
+      indicators.rpm3_min,
+      maxMatchingNumberFields(state, /^RPM \d+$/),
+      maxMatchingNumberFields(state, /^power \d+, hp$/),
+      maxMatchingNumberFields(state, /^thrust \d+, kgs$/),
+      maxMatchingNumberFields(state, /^efficiency \d+, %$/)
+    ]);
+    return engineOutput === null || engineOutput <= 1;
+  }
+
+  function hasCoreFlightSample(state, indicators) {
+    return [
+      state["IAS, km/h"],
+      state["TAS, km/h"],
+      state["H, m"],
+      state["Vy, m/s"],
+      state.Ny,
+      indicators.g_meter,
+      indicators.radio_altitude,
+      indicators.vario,
+      indicators.aviahorizon_pitch,
+      indicators.aviahorizon_pitch1,
+      indicators.aviahorizon_roll,
+      indicators.aviahorizon_roll1,
+      indicators.bank
+    ].some((value) => numberOrNull(value) !== null);
+  }
+
+  function multiplyNumber(value, multiplier) {
+    const number = numberOrNull(value);
+    return number === null ? null : number * multiplier;
+  }
+
+  function maxNumber(values) {
+    let maximum = null;
+    for (let index = 0; index < values.length; index += 1) {
+      const value = numberOrNull(values[index]);
+      if (value !== null && (maximum === null || value > maximum)) {
+        maximum = value;
+      }
+    }
+    return maximum;
+  }
+
+  function maxMatchingNumberFields(source, pattern) {
+    let maximum = null;
+    Object.keys(source || {}).forEach((name) => {
+      if (!pattern.test(name)) {
+        return;
+      }
+      const number = numberOrNull(source[name]);
+      if (number !== null && (maximum === null || number > maximum)) {
+        maximum = number;
+      }
+    });
+    return maximum;
   }
 
   function isFlightTelemetryValid(state, indicators, connected) {

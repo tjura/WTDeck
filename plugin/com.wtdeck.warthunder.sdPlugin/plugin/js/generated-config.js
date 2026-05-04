@@ -114,8 +114,8 @@
       },
       "com.wtdeck.warthunder.drogue-chute.deploy": {
         id: "drogueChute",
-        shortLabel: "CHUTE",
-        panelLabel: "DROGUE",
+        shortLabel: "AUTO",
+        panelLabel: "AUTO LDG",
         kind: "momentary",
         telemetry: {
           mode: "drogue-readiness",
@@ -128,13 +128,16 @@
             radarAltitudeMeters: "radarAltitudeMeters"
           },
           notes:
-            "War Thunder localhost telemetry does not expose structured drogue chute deployed or released state. WTDeck only allows the command when IAS and radar altitude match a conservative landing-use envelope."
+            "War Thunder localhost telemetry does not expose structured drogue chute deployed or released state. WTDeck treats chute deploy as optional and only sends it when IAS and radar altitude confirm a conservative landing-use envelope."
         },
         thresholds: { maxReadyIasKmh: 350, maxReadyRadarAltitudeMeters: 10 },
         automation: {
           landingAssist: {
             settingKey: "autoLandingAssistEnabled",
             brakeBindingSettingKey: "autoBrakeHotkeyLabel",
+            gearIntent: "landing-gear-toggle",
+            gearWarThunderControlId: "ID_GEAR",
+            defaultGearHotkeyLabel: "G",
             brakeIntent: "wheel-brake",
             brakeWarThunderControlId: "brake_left_rangeMax",
             brakeWarThunderControlIds: [
@@ -145,6 +148,8 @@
             defaultBrakeHotkeyLabel: "B",
             thresholds: {
               gearDownMinPercent: 95,
+              gearUpMaxPercent: 5,
+              autoGearMaxSpeedKmh: 350,
               touchdownRadarAltitudeMeters: 3.5,
               touchdownMaxIasKmh: 380,
               noRadarTouchdownMaxSpeedKmh: 260,
@@ -157,7 +162,7 @@
               stoppedHoldMs: 5000
             },
             notes:
-              "Optional user-armed landing assist. WTDeck holds wheel brake after touchdown, deploys Drogue once its readiness gate is satisfied, then releases brake after the aircraft stops."
+              "Optional user-armed landing assist. WTDeck can extend landing gear before landing when the gear is confirmed up and speed is safe. It then holds wheel brake after touchdown, deploys Drogue only when readiness is confirmed, and releases brake after the aircraft stops. Gear and brake automation do not require a Drogue-equipped aircraft."
           }
         },
         states: {
@@ -177,7 +182,7 @@
           adapter: "companion-http",
           requiresReadyState: true,
           notes:
-            "Default War Thunder drag/drogue chute binding is Shift+G. The button dispatches only when WTDeck's latest speed and radar-altitude readiness model is READY."
+            "Optional War Thunder drag/drogue chute binding. The chute command dispatches only when WTDeck's latest speed and radar-altitude readiness model is READY."
         }
       },
       "com.wtdeck.warthunder.flares.fire": {

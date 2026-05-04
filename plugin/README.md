@@ -7,7 +7,7 @@ This folder contains the source package for the Stream Dock plugin:
 The plugin is browser-runtime based. It connects to Stream Dock through the SDK WebSocket and polls War Thunder's local telemetry server at `http://127.0.0.1:8111`.
 
 Version `0.1.0` exposes the `Landing Gear`, `Air Brake`, `Flaps Up`,
-`Flaps Down`, `Drogue Chute`, `Fire Flares`, `Fire Chaff`, `G Force`, `Speed`,
+`Flaps Down`, `Auto Landing`, `Fire Flares`, `Fire Chaff`, `G Force`, `Speed`,
 and `Altitude` actions. New cockpit controls should not be added to the
 manifest until their telemetry or readiness mode, rendering, command path, and
 live-test notes are complete.
