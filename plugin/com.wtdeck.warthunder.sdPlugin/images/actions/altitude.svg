@@ -1,0 +1,42 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="144" height="144" viewBox="0 0 144 144">
+  <defs>
+    <linearGradient id="case" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0" stop-color="#252b2f"/>
+      <stop offset="1" stop-color="#060708"/>
+    </linearGradient>
+    <linearGradient id="plate" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0" stop-color="#141915"/>
+      <stop offset="1" stop-color="#070809"/>
+    </linearGradient>
+    <filter id="glow" x="-50%" y="-50%" width="200%" height="200%">
+      <feGaussianBlur stdDeviation="2.2" result="blur"/>
+      <feMerge>
+        <feMergeNode in="blur"/>
+        <feMergeNode in="SourceGraphic"/>
+      </feMerge>
+    </filter>
+  </defs>
+  <rect width="144" height="144" rx="8" fill="url(#case)"/>
+  <rect x="8" y="8" width="128" height="128" rx="6" fill="url(#plate)" stroke="#3a4349" stroke-width="1.5"/>
+  <circle cx="18" cy="18" r="4" fill="#111416" stroke="#4a535a" stroke-width="1"/>
+  <path d="M15.5 18h5" stroke="#59636b" stroke-width="1"/>
+  <circle cx="126" cy="18" r="4" fill="#111416" stroke="#4a535a" stroke-width="1"/>
+  <path d="M123.5 18h5" stroke="#59636b" stroke-width="1"/>
+  <circle cx="18" cy="126" r="4" fill="#111416" stroke="#4a535a" stroke-width="1"/>
+  <path d="M15.5 126h5" stroke="#59636b" stroke-width="1"/>
+  <circle cx="126" cy="126" r="4" fill="#111416" stroke="#4a535a" stroke-width="1"/>
+  <path d="M123.5 126h5" stroke="#59636b" stroke-width="1"/>
+  <text x="72" y="27" text-anchor="middle" fill="#d9dde0" font-size="12" font-family="Arial, sans-serif" font-weight="700">ALT</text>
+  <rect x="20" y="38" width="28" height="88" rx="5" fill="#050607" stroke="#46d982" stroke-width="1"/>
+  <circle cx="34" cy="50" r="5.5" fill="#8affb9" filter="url(#glow)"/>
+  <text x="34" y="77.5" text-anchor="middle" dominant-baseline="middle" fill="#46d982" font-size="16" font-family="Arial, sans-serif" font-weight="800">O</text>
+  <text x="34" y="94.5" text-anchor="middle" dominant-baseline="middle" fill="#46d982" font-size="16" font-family="Arial, sans-serif" font-weight="800">K</text>
+  <rect x="54" y="38" width="70" height="88" rx="5" fill="#080a0b" stroke="#323b42" stroke-width="1"/>
+  <path d="M62 69h54M62 102h54" stroke="#263139" stroke-width="1"/>
+  <path d="M65 58h48" stroke="#46d982" stroke-width="2" stroke-linecap="round" opacity="0.28"/>
+  <path d="M66 112c8-8 15-10 24-7s16 1 25-8" fill="none" stroke="#46d982" stroke-width="2" stroke-linecap="round" opacity="0.30"/>
+  <text x="64" y="53" text-anchor="start" fill="#8f9aa1" font-size="8" font-family="Arial, sans-serif" font-weight="700">RALT</text>
+  <text x="89" y="80" text-anchor="middle" fill="#46d982" font-size="21" font-family="Arial, sans-serif" font-weight="800">250M</text>
+  <text x="64" y="96" text-anchor="start" fill="#8f9aa1" font-size="8" font-family="Arial, sans-serif" font-weight="700">ALT</text>
+  <text x="91" y="117" text-anchor="middle" fill="#d9dde0" font-size="15" font-family="Arial, sans-serif" font-weight="800">1200M</text>
+</svg>

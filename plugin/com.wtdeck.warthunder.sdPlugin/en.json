@@ -9,5 +9,41 @@
   "com.wtdeck.warthunder.airbrake.toggle": {
     "Name": "Air Brake",
     "Tooltip": "War Thunder air brake state and toggle command"
+  },
+  "com.wtdeck.warthunder.flaps.up": {
+    "Name": "Flaps Up",
+    "Tooltip": "War Thunder flaps-up detent command with live flap state"
+  },
+  "com.wtdeck.warthunder.flaps.down": {
+    "Name": "Flaps Down",
+    "Tooltip": "War Thunder flaps-down detent command with live flap state"
+  },
+  "com.wtdeck.warthunder.drogue-chute.deploy": {
+    "Name": "Drogue Chute",
+    "Tooltip": "War Thunder drogue chute deploy command"
+  },
+  "com.wtdeck.warthunder.flares.fire": {
+    "Name": "Fire Flares",
+    "Tooltip": "War Thunder fire flares command"
+  },
+  "com.wtdeck.warthunder.chaff.fire": {
+    "Name": "Fire Chaff",
+    "Tooltip": "War Thunder fire chaff command"
+  },
+  "com.wtdeck.warthunder.g-force.indicator": {
+    "Name": "G Force",
+    "Tooltip": "War Thunder live G-load indicator"
+  },
+  "com.wtdeck.warthunder.speed.indicator": {
+    "Name": "Speed",
+    "Tooltip": "War Thunder live IAS and TAS speed indicator"
+  },
+  "com.wtdeck.warthunder.fuel.indicator": {
+    "Name": "Fuel",
+    "Tooltip": "War Thunder live fuel endurance and low-fuel warning indicator"
+  },
+  "com.wtdeck.warthunder.altitude.indicator": {
+    "Name": "Altitude",
+    "Tooltip": "War Thunder live radar altitude and ground collision warning indicator"
   }
 }

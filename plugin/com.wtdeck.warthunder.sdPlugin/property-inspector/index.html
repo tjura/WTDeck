@@ -7,7 +7,7 @@
   </head>
   <body>
     <main>
-      <section class="field">
+      <section id="adapterField" class="field">
         <label for="adapter">Command Adapter</label>
         <select id="adapter">
           <option value="companion-http">WTDeck Key Sender</option>
@@ -15,22 +15,39 @@
         </select>
       </section>
 
-      <section class="field">
-        <label for="hotkey">Game Binding Label</label>
+      <section id="hotkeyField" class="field">
+        <label id="hotkeyLabel" for="hotkey">Game Binding</label>
         <input id="hotkey" type="text" maxlength="24" placeholder="Default action binding">
+        <p id="bindingStatus" class="field-note" aria-live="polite"></p>
       </section>
 
-      <section class="field">
+      <section id="autoLandingAssistField" class="check-field">
+        <input id="autoLandingAssist" type="checkbox">
+        <label for="autoLandingAssist">Auto landing assist</label>
+      </section>
+
+      <section id="autoBrakeHotkeyField" class="field">
+        <label id="autoBrakeHotkeyLabel" for="autoBrakeHotkey">Wheel Brake Hold Binding</label>
+        <input id="autoBrakeHotkey" type="text" maxlength="24" placeholder="Default brake binding">
+        <p id="autoBrakeBindingStatus" class="field-note" aria-live="polite"></p>
+      </section>
+
+      <section id="companionUrlField" class="field">
         <label for="companionUrl">Companion URL</label>
         <input id="companionUrl" type="url" placeholder="http://127.0.0.1:34911/command">
       </section>
 
-      <section class="check-field">
+      <section id="invertTelemetryField" class="check-field">
         <input id="invertTelemetry" type="checkbox">
         <label for="invertTelemetry">Invert telemetry percent</label>
       </section>
 
-      <p class="note">
+      <section id="alertSoundsField" class="check-field">
+        <input id="alertSounds" type="checkbox">
+        <label id="alertSoundsLabel" for="alertSounds">Alert sounds</label>
+      </section>
+
+      <p id="settingsNote" class="note">
         WTDeck sends the focused game window the configured key through the local WTDeck key sender.
       </p>
     </main>

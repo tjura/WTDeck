@@ -10,7 +10,7 @@ Key files:
 
 - `manifest.json` declares the official Stream Dock plugin package, actions, icons, code path, and property inspector.
 - `config/defaults.json` stores telemetry polling and command adapter defaults.
-- `config/actions.json` is the action contract: each action has a Stream Dock UUID, telemetry mapping, thresholds, state labels, and command intent.
+- `config/actions.json` is the action contract: each action has a Stream Dock UUID, telemetry mapping or readiness mode, state labels, and command intent.
 - `plugin/index.html` loads the Stream Dock runtime.
 - `plugin/js/war-thunder-client.js` polls War Thunder at `http://127.0.0.1:8111`.
 - `plugin/js/state-machines.js` turns normalized telemetry percentages into
@@ -18,7 +18,9 @@ Key files:
   `OFFLINE`.
 - `plugin/js/key-renderer.js` generates per-key SVG images dynamically, so the button face can react every telemetry tick.
 - `plugin/js/action-runtime.js` owns Stream Dock events, context tracking, polling, rendering, and command dispatch.
-- `property-inspector/` lets the user choose command adapter, binding label, companion URL, and telemetry inversion.
+- `property-inspector/` lets the user choose command adapter, binding label,
+  companion URL, and telemetry inversion. It can auto-fill an empty binding
+  label from the local companion's read-only War Thunder binding discovery.
 
 ## Runtime Flow
 
@@ -26,7 +28,9 @@ Key files:
 2. `connectElgatoStreamDeckSocket(...)` opens the SDK WebSocket and registers the plugin.
 3. The runtime starts polling War Thunder `/state` and `/indicators`.
 4. Raw telemetry is normalized into a snapshot with fields such as
-   `gearPercent`, `airbrakePercent`, and connection validity.
+   `gearPercent`, `airbrakePercent`, `flapsPercent`, `gForce`, `iasKmh`,
+   `tasKmh`, `throttlePercent`, `altitudeMeters`, `radarAltitudeMeters`, and
+   connection validity.
 5. Each visible Stream Dock key gets a cockpit model based on its action definition.
 6. The renderer produces a complete SVG key face and sends it through `setImage`.
 7. When a key is pressed, the runtime sends the configured command intent through a command adapter.
@@ -37,7 +41,7 @@ Local verification on this machine showed War Thunder's `/state` response includ
 
 ## Actions
 
-The current manifest exposes two cockpit actions:
+The current manifest exposes ten cockpit actions:
 
 - `Landing Gear`: reads `/state` field `gear, %`, falls back to `/indicators`
   gear fields, renders `UP`, `DOWN`, `TRANSIT`, `OFFLINE`, or `NO FLIGHT`,
@@ -45,12 +49,42 @@ The current manifest exposes two cockpit actions:
 - `Air Brake`: reads `/state` field `airbrake, %`, falls back to `/indicators`
   airbrake fields, renders `OFF`, `ON`, `TRANSIT`, `OFFLINE`, or `NO FLIGHT`,
   and sends the configured air brake binding through the WTDeck companion.
+- `Flaps Up`: reads `/state` field `flaps, %`, falls back to `/indicators`
+  flap fields, renders `UP`, `MID`, `DOWN`, `OFFLINE`, or `NO FLIGHT`, and
+  sends the configured `ID_FLAPS_UP` binding through the WTDeck companion. The
+  button face shows the actual normalized flap percentage on a 0-100 scale
+  because available flap detents vary by aircraft.
+- `Flaps Down`: uses the same flap telemetry and rendered state as `Flaps Up`,
+  but sends the configured `ID_FLAPS_DOWN` binding. War Thunder flap controls
+  are detent-step commands, so WTDeck exposes directional actions rather than a
+  flap toggle.
+- `Drogue Chute`: sends the configured drogue chute binding through the WTDeck
+  companion only when the latest model is `READY`. It renders `READY`, `FAST`,
+  `AIR`, `OFFLINE`, or `NO FLIGHT`. War Thunder localhost telemetry does not
+  expose structured chute deployed/released state, so this action uses IAS and
+  radar altitude to allow only a conservative landing-use envelope. Its
+  optional auto landing assist adds `ARM`, `BRK`, `DRG`, and `STOP` phases while
+  it holds wheel brake after touchdown and deploys Drogue once.
+- `Fire Flares`: sends the configured War Thunder `Fire flares` binding through
+  the WTDeck companion and renders `READY`, `OFFLINE`, or `NO FLIGHT`. It is a
+  separate command from `Fire countermeasures` and `Switch countermeasures`, and
+  it ships with no default binding.
+- `Fire Chaff`: sends the configured War Thunder `Fire chaff` binding through
+  the WTDeck companion and renders `READY`, `OFFLINE`, or `NO FLIGHT`. It is a
+  separate command from `Fire countermeasures` and `Switch countermeasures`, and
+  it ships with no default binding.
+- `G Force`: reads `/state` field `Ny`, falls back to `/indicators` `g_meter`,
+  and renders a read-only live G-load indicator.
+- `Speed`: reads `/state` fields `IAS, km/h` and `TAS, km/h`, and renders a
+  read-only airspeed instrument.
+- `Altitude`: reads `/state` field `H, m` and `/indicators` `radio_altitude`,
+  then renders a read-only radar altitude plus altitude instrument.
 
-Flaps, countermeasures, and status tiles are planned future actions, but they
+Switch Countermeasures and status tiles are planned future actions, but they
 should stay out of the local manifest until each action has its own telemetry
-mapping, rendered state model, and command behavior ready for live testing. This
-keeps testing focused and avoids polluting the user profile with unfinished
-controls.
+mapping or readiness model, rendered state model, and command behavior ready for
+live testing. This keeps testing focused and avoids polluting the user profile
+with unfinished controls.
 
 ## Telemetry Strategy
 
@@ -84,6 +118,14 @@ The plugin treats `/state` as primary flight telemetry because it exposes most c
 
 The state machines should prefer continuous percentages over binary lamps. Intermediate values are cockpit-relevant and should render as movement, not as stale on/off state.
 
+No current `/state` or `/indicators` field has been found for drogue chute
+deployed/released state, flare or chaff count, selected countermeasure mode, or
+countermeasure release confirmation. These command-only buttons must not infer
+action success from missing telemetry. Drogue Chute may use speed and radar
+altitude as command-readiness gates; countermeasure buttons should only show
+whether War Thunder flight telemetry is valid enough for the command to be
+relevant.
+
 ## Command Dispatch
 
 Stream Dock can render and react to telemetry directly, but sending input into
@@ -105,14 +147,48 @@ Stream Dock keyUp   -> companion phase "up"   -> Win32 key up
 ```
 
 The companion resolves the configured binding label, currently `G` for Landing
-Gear and `H` for Air Brake, and sends scan-code keyboard events with
-`SendInput`. The browser plugin does not call `showOk` or `showAlert` for
-normal control presses because those overlays break the cockpit-style button
-experience.
+Gear, `H` for Air Brake, `PageUp` for Flaps Up, `PageDown` for Flaps Down, and
+`Shift+G` for Drogue Chute. Drogue auto landing assist also resolves
+War Thunder's `brake_left_rangeMax` / `brake_right_rangeMax` controls, default
+`B`, as a secondary hold-style command. Fire Flares and Fire Chaff have no
+bundled defaults; bind War Thunder's separate `Fire
+flares` and `Fire chaff` controls and enter those labels in the property
+inspector. The companion sends scan-code keyboard
+events with `SendInput`; modifier combinations are pressed in order and
+released in reverse order. The browser plugin does not call `showOk` or
+`showAlert` for normal control presses because those overlays break the
+cockpit-style button experience.
 
 The recommended production direction remains a small signed companion executable
 that owns keyboard or virtual-device output. The Stream Dock plugin should stay
 responsible for UI, settings, telemetry, and command intent.
+
+## Binding Detection
+
+WTDeck can suggest or fill action bindings from the player's active War Thunder
+controls without editing game files. The property inspector asks the localhost
+companion for `GET /bindings?actionUuid=...`; the companion reads active
+`machine.blk` files under `Documents\My Games\WarThunder\Saves`.
+
+The active-file priority is:
+
+1. `Saves\last\production\machine.blk`
+2. The newest `Saves\<uid>\production\machine.blk`
+
+The companion parses each action's configured War Thunder control ID, such as
+`ID_GEAR`, `ID_AIR_BRAKE`, `ID_FLAPS_UP`, `ID_FLAPS_DOWN`, `ID_CHUTE`,
+`brake_left_rangeMax`, `brake_right_rangeMax`, `ID_COUNTERMEASURES_FLARES`, or
+`ID_COUNTERMEASURES_CHAFF`, and
+converts `keyboardKey:i=N` DirectInput scan codes into WTDeck labels such as
+`G`, `H`, `PageUp`, `PageDown`, `B`, or `Shift+G`. If the active file does not contain an explicit
+keyboard override for that control, WTDeck falls back to the action's known
+default label. If the active file contains only joystick or mouse bindings for
+that control, WTDeck reports that no keyboard binding was found instead of
+guessing.
+
+This feature is intentionally suggestion/fill only. WTDeck must not modify
+War Thunder `.blk` files, unpack packaged game defaults, or require binding
+detection for button rendering or manually configured command dispatch.
 
 ## Packaging And Validation
 
@@ -146,6 +222,6 @@ Then restart Stream Dock and open the SDK debug page:
 - Normalize raw telemetry once in `war-thunder-client.js`; do not parse endpoint-specific fields inside button renderers.
 - Treat movement states as first-class cockpit states.
 - Do not use map object data for enemy awareness or overlays. This plugin should focus on the player's own aircraft cockpit surface.
-- Avoid assuming default War Thunder keybindings. Expose labels and adapters through the property inspector.
+- Avoid assuming default War Thunder keybindings. Expose labels and adapters through the property inspector, and use companion binding detection only as a read-only fill helper.
 - Send game input through the companion with explicit key down/key up phases.
 - Keep unfinished actions out of the manifest until they have a live-test path.

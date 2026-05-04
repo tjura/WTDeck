@@ -156,6 +156,7 @@ Observed unit notes:
 - `mach` mirrors `/state` `M`.
 - `vario` closely matches `/state` `Vy, m/s`.
 - `altitude_*` fields appear to be cockpit altimeter readings and may not be metric even when `/state` has `H, m`. Prefer `H, m` for canonical altitude.
+- `radio_altitude` matched feet in the live `a_4n` sample (`8408` vs `/state` `H, m` near `2578`), so WTDeck normalizes it to meters before rendering or gating actions.
 - Gear and flap indicator fields are often normalized `0.0` to `1.0`, while `/state` may provide percent values.
 
 For WTDeck landing gear work, query both endpoints initially:
@@ -442,6 +443,45 @@ WTDeck implementation rule:
    `gear`, `wheel`, or localized equivalents, but that should be documented as
    opportunistic and not authoritative.
 
+## Drogue Chute Telemetry Investigation
+
+Live investigation on 2026-05-03 checked whether the localhost API exposes
+structured drogue or drag chute state.
+
+Observed result:
+
+- `/state` includes `gear, %` and `airbrake, %`, but no key containing `chute`,
+  `drogue`, `drag`, or `parachute`.
+- `/indicators` includes gear, flap, and airbrake indicators, but no chute
+  indicator or lever.
+- The War Thunder control action exists separately as `ID_CHUTE` / `Drag chute`,
+  but the local telemetry surface does not currently mirror its deployed or
+  released state.
+
+WTDeck implementation rule:
+
+1. Treat Drogue Chute as a command action, not a telemetry-confirmed toggle.
+2. Render `READY` only when flight telemetry is valid, IAS is at or below
+   `350 km/h`, and normalized radar altitude is at or below `10 m`.
+3. Render `FAST`, `AIR`, `NO FLIGHT`, or `OFFLINE` when the command is not
+   meaningfully actionable, and do not dispatch the key command in those states.
+4. Optional auto landing assist may use gear percentage, IAS, vertical speed,
+   and radar altitude to detect touchdown, hold the wheel-brake range binding
+   (`brake_left_rangeMax` / `brake_right_rangeMax`), and send `ID_CHUTE` once
+   readiness gates are satisfied. Because some aircraft report a small
+   positive `radio_altitude` while already on the runway, touchdown allows
+   normalized `radio_altitude` at or below `3.5 m` with vertical speed stable
+   within `1 m/s`. If `radio_altitude` is unavailable, the
+   assist may only use the no-radar rollout fallback with gear down, stable
+   vertical speed, idle throttle (`<= 5%`), and speed at or below `260 km/h`.
+   If throttle telemetry is missing, the fallback stays speed-only at
+   `140 km/h`. After that fallback activates braking, it may send `ID_CHUTE` without
+   changing the normal Drogue button's incomplete-telemetry state. It must be
+   user-armed and release brake on stop, cancel, telemetry loss, or action
+   disappearance.
+5. Do not add `DEPLOYED`, `RELEASED`, or `TRANSIT` states until a structured
+   telemetry field is found and live-tested.
+
 ## `/hudmsg`
 
 Request with cursors:
@@ -493,6 +533,8 @@ For a StreamDock plugin or companion app:
 | Data | Endpoint | Suggested polling |
 | --- | --- | --- |
 | Gear/flaps/airbrake button state | `/state`, fallback `/indicators` | 100 to 250 ms |
+| Drogue chute command readiness | `/state` IAS plus `/indicators` normalized `radio_altitude` | 250 ms |
+| Drogue auto landing assist | `/state` gear, IAS, vertical speed plus normalized `/indicators` `radio_altitude` | 200 to 250 ms |
 | Speed, altitude, fuel, G-load display | `/state` | 250 ms |
 | Instrument-specific display values | `/indicators` | 250 ms |
 | Mission status | `/mission.json` | 1000 to 2000 ms |
@@ -509,6 +551,8 @@ The safe project direction is to use only own-aircraft telemetry and normal acti
 - gear state
 - flap state
 - airbrake state
+- drogue chute command readiness, but not deployed/released state
+- user-armed landing assist that uses only own-aircraft landing telemetry
 - speed/altitude/Mach/G/fuel
 - engine status
 - mission running/not running
@@ -520,7 +564,7 @@ Avoid:
 - ESP-like map-to-compass or map-to-HUD conversion
 - scraping the game image or memory
 - modifying game files, game process memory, or rendered game images
-- automating actions beyond normal user-configured button presses
+- fully autonomous action automation without current user arming or clear cleanup
 
 The official forum position is nuanced: general localhost data overlays are described as not normally bannable, but using exposed data to show enemy markers in markerless modes or as a compass/ESP-style overlay is not approved.
 
@@ -533,6 +577,14 @@ The official forum position is nuanced: general localhost data overlays are desc
   - `100` or `1.0`: deployed/down, depending on endpoint
   - intermediate: moving
   - missing/invalid: unknown
+- Treat flaps as stepped directional controls:
+  - primary state is `/state` `flaps, %`
+  - fallback state is `/indicators` `flaps_indicator`, then `flaps`
+  - `ID_FLAPS_UP` and `ID_FLAPS_DOWN` are separate commands
+  - intermediate percentages are detent positions and should render as `MID`,
+    not as a failed toggle
+  - the button face should include the actual 0-100 percent scale, because each
+    aircraft can expose different flap stages
 - Debounce state transitions so button icons do not flicker around fractional values.
 - Use the local API from a companion process if the StreamDock plugin sandbox makes direct polling awkward.
 - Keep map object support out of the initial plugin unless it is limited to official-map-equivalent views and explicitly reviewed for fair-play risk.

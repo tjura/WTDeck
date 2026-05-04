@@ -59,3 +59,19 @@ input[type="checkbox"] {
   font-size: 12px;
   line-height: 1.35;
 }
+
+.field-note {
+  min-height: 15px;
+  margin: 0;
+  color: #9aa7b2;
+  font-size: 11px;
+  line-height: 1.35;
+}
+
+.field-note[data-tone="ok"] {
+  color: #8fcfb0;
+}
+
+.field-note[data-tone="warn"] {
+  color: #d6b16e;
+}

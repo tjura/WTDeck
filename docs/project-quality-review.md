@@ -1,19 +1,30 @@
 # Project Quality Review
 
 This review captures the current cockpit-control baseline after the first
-successful Landing Gear test and the Air Brake implementation pass.
+successful Landing Gear test and the Air Brake, Drogue Chute, Fire Flares,
+Fire Chaff, Flaps Up, Flaps Down, G Force, Speed, and Altitude implementation
+passes.
 
 ## Current Supported Scope
 
-Version `0.1.0` supports two Stream Dock actions:
+Version `0.1.0` supports ten Stream Dock actions:
 
 - `Landing Gear`
 - `Air Brake`
+- `Flaps Up`
+- `Flaps Down`
+- `Drogue Chute`
+- `Fire Flares`
+- `Fire Chaff`
+- `G Force`
+- `Speed`
+- `Altitude`
 
-It does not currently support flaps, countermeasures, flight status tiles,
+It does not currently support Switch Countermeasures, flight status tiles,
 installer publishing, or store packaging. Those features should be added only
-after each one has a telemetry contract, rendered state model, command adapter
-behavior, validation coverage, and live in-game test notes.
+after each one has a telemetry contract or readiness model, rendered state
+model, command adapter behavior, validation coverage, and live in-game test
+notes.
 
 ## Companion Decision
 
@@ -54,10 +65,19 @@ The repository has the expected open-source support files:
 
 The plugin baseline is intentionally small:
 
-- two manifest actions
-- two localization action entries
-- two telemetry-normalized fields, `gearPercent` and `airbrakePercent`
-- two command intents, `landing-gear-toggle` and `airbrake-toggle`
+- ten manifest actions
+- ten localization action entries
+- telemetry-normalized fields for control state, G-load, speed, altitude, and
+  radar altitude
+- three command-readiness actions for `Drogue Chute`, `Fire Flares`, and
+  `Fire Chaff`, which do not fake unavailable deployment or release telemetry;
+  Drogue Chute also blocks dispatch outside its speed/radar-altitude envelope
+- optional user-armed Drogue auto landing assist that holds `wheel-brake` only
+  after touchdown, or after a conservative no-radar-altitude rollout fallback,
+  and releases it on stop or cleanup
+- eight command intents, `landing-gear-toggle`, `airbrake-toggle`, `flaps-up`,
+  `flaps-down`, `drogue-chute-deploy`, `wheel-brake`, `fire-flares`, and
+  `fire-chaff`
 - no static legacy state images
 - no unfinished action entries in the manifest
 

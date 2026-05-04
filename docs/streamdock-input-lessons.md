@@ -70,8 +70,10 @@ because the native hotkey hypothesis failed for custom code actions.
 For each cockpit action:
 
 1. Define the action in `config/actions.json` with a stable command `intent`.
-2. Define the primary telemetry field and explicit fallback fields.
-3. Normalize raw telemetry in `war-thunder-client.js`.
+2. Define the primary telemetry field and explicit fallback fields, or an
+   explicit readiness mode for command-only actions.
+3. Normalize raw telemetry in `war-thunder-client.js` when the action uses
+   endpoint fields.
 4. Convert telemetry to cockpit states in `state-machines.js`.
 5. Render the button in `key-renderer.js`; do not rely on legacy static state
    images.
@@ -99,6 +101,43 @@ The matching release event sends `"phase": "up"`.
 Air Brake uses the same request shape with `"intent": "airbrake-toggle"` and
 default `"hotkeyLabel": "H"`.
 
+Flaps Up and Flaps Down use separate War Thunder controls instead of a toggle:
+`"intent": "flaps-up"` defaults to `"hotkeyLabel": "PageUp"`, and
+`"intent": "flaps-down"` defaults to `"hotkeyLabel": "PageDown"`. Both actions
+render the same live `flaps, %` state, while the command arrow shows the
+direction of the button.
+
+Drogue Chute uses the same request shape with
+`"intent": "drogue-chute-deploy"` and default `"hotkeyLabel": "Shift+G"`. The
+companion parses modifier combinations, presses modifiers before the main key,
+and releases the main key before modifiers. The plugin dispatches this command
+only while the latest Drogue model is `READY`, which currently means valid
+flight telemetry, IAS at or below `350 km/h`, and normalized radar altitude at
+or below `10 m`.
+
+Drogue Chute can also run an optional user-armed landing assist. In that mode,
+tapping the Drogue key arms or cancels the assist instead of sending an
+immediate manual chute command. After touchdown is confirmed, WTDeck sends
+`"intent": "wheel-brake"` with the configured wheel brake binding, default `B`,
+as a key-down event, deploys Drogue once its readiness gate is satisfied, and
+sends wheel-brake key-up after the aircraft stops.
+With radio altitude available, touchdown confirmation allows a small landing
+gear height offset: normalized `radio_altitude` must be at or below `3.5 m`
+and vertical speed must be stable within `1 m/s`.
+On aircraft that do not expose `radio_altitude`, WTDeck uses a conservative
+rollout fallback. With gear down, idle throttle (`<= 5%`) and stable vertical
+speed, braking can start at or below `260 km/h`; if throttle telemetry is
+missing, WTDeck falls back to the older speed-only `140 km/h` guard. That
+fallback is limited to the armed auto-assist path; the normal Drogue button
+still reports incomplete readiness telemetry instead of claiming a live chute
+state.
+
+The property inspector can also call the companion with
+`GET /bindings?actionUuid=...` to auto-fill an empty binding label. The
+companion reads the active War Thunder `machine.blk` controls file, converts
+DirectInput `keyboardKey:i=N` scan codes to WTDeck labels, and falls back to the
+action default only when the active file does not override that control.
+
 ## Antipatterns
 
 Avoid these mistakes:
@@ -114,6 +153,14 @@ Avoid these mistakes:
   command dispatch.
 - Do not hardcode War Thunder bindings in the runtime. Store the default in the
   action config and let the property inspector override it.
+- Do not edit War Thunder `.blk` files, unpack packaged default presets, or
+  overwrite an existing WTDeck binding from detected data.
+- Do not fake command state when War Thunder does not expose telemetry. Drogue
+  Chute may gate command readiness with speed and radar altitude, but it must
+  not claim deployed/released state until a structured chute field is discovered.
+- Do not leave hold-style automated commands without cleanup. Any auto landing
+  assist path that presses wheel brake must release it on stop, cancel, telemetry
+  loss, settings changes, or key disappearance.
 - Do not leave old static images in the package when the runtime-generated key
   visual is the desired product direction.
 - Do not parse endpoint-specific telemetry fields inside the renderer. Normalize
@@ -139,8 +186,14 @@ the union is incomplete and can cause `SendInput` failure.
 Keep logging the phase and virtual key:
 
 ```text
-Sent vkey 71 phase down for landing-gear-toggle
-Sent vkey 71 phase up for landing-gear-toggle
+Sent keys 71 phase down for landing-gear-toggle
+Sent keys 71 phase up for landing-gear-toggle
+Sent keys 33 phase down for flaps-up
+Sent keys 33 phase up for flaps-up
+Sent keys 34 phase down for flaps-down
+Sent keys 34 phase up for flaps-down
+Sent keys 16+71 phase down for drogue-chute-deploy
+Sent keys 71+16 phase up for drogue-chute-deploy
 ```
 
 This makes it clear whether Stream Dock reached the companion and whether the
@@ -161,6 +214,7 @@ Companion checks:
 ```powershell
 .\scripts\start-companion.ps1 -Restart
 Invoke-RestMethod http://127.0.0.1:34911/health
+Invoke-RestMethod 'http://127.0.0.1:34911/bindings?actionUuid=com.wtdeck.warthunder.gear.toggle'
 ```
 
 Dry-run command checks:

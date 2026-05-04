@@ -1,0 +1,59 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="144" height="144" viewBox="0 0 144 144">
+  <defs>
+    <linearGradient id="case" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0" stop-color="#252b2f"/>
+      <stop offset="1" stop-color="#060708"/>
+    </linearGradient>
+    <linearGradient id="plate" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0" stop-color="#141915"/>
+      <stop offset="1" stop-color="#070809"/>
+    </linearGradient>
+    <filter id="glow" x="-50%" y="-50%" width="200%" height="200%">
+      <feGaussianBlur stdDeviation="2.2" result="blur"/>
+      <feMerge>
+        <feMergeNode in="blur"/>
+        <feMergeNode in="SourceGraphic"/>
+      </feMerge>
+    </filter>
+  </defs>
+  <rect width="144" height="144" rx="8" fill="url(#case)"/>
+  <rect x="8" y="8" width="128" height="128" rx="6" fill="url(#plate)" stroke="#3a4349" stroke-width="1.5"/>
+  <circle cx="18" cy="18" r="4" fill="#111416" stroke="#4a535a" stroke-width="1"/>
+  <path d="M15.5 18h5" stroke="#59636b" stroke-width="1"/>
+  <circle cx="126" cy="18" r="4" fill="#111416" stroke="#4a535a" stroke-width="1"/>
+  <path d="M123.5 18h5" stroke="#59636b" stroke-width="1"/>
+  <circle cx="18" cy="126" r="4" fill="#111416" stroke="#4a535a" stroke-width="1"/>
+  <path d="M15.5 126h5" stroke="#59636b" stroke-width="1"/>
+  <circle cx="126" cy="126" r="4" fill="#111416" stroke="#4a535a" stroke-width="1"/>
+  <path d="M123.5 126h5" stroke="#59636b" stroke-width="1"/>
+  <text x="72" y="27" text-anchor="middle" fill="#d9dde0" font-size="12" font-family="Arial, sans-serif" font-weight="700">FLARES</text>
+
+  <rect x="20" y="38" width="28" height="88" rx="5" fill="#050607" stroke="#46d982" stroke-width="1"/>
+  <circle cx="34" cy="50" r="5.5" fill="#8affb9" filter="url(#glow)"/>
+  <text x="34" y="69" text-anchor="middle" dominant-baseline="middle" fill="#46d982" font-size="16" font-family="Arial, sans-serif" font-weight="800">R</text>
+  <text x="34" y="86" text-anchor="middle" dominant-baseline="middle" fill="#46d982" font-size="16" font-family="Arial, sans-serif" font-weight="800">D</text>
+  <text x="34" y="103" text-anchor="middle" dominant-baseline="middle" fill="#46d982" font-size="16" font-family="Arial, sans-serif" font-weight="800">Y</text>
+
+  <rect x="54" y="38" width="70" height="88" rx="5" fill="#080a0b" stroke="#323b42" stroke-width="1"/>
+  <rect x="63" y="48" width="34" height="42" rx="5" fill="#050607" stroke="#46d982" stroke-width="1.5"/>
+  <path d="M68 58h24M68 72h24M68 86h24" stroke="#59636b" stroke-width="1" stroke-linecap="round" opacity="0.45"/>
+  <g fill="#0d1112" stroke="#3d454a" stroke-width="1">
+    <circle cx="72" cy="58" r="5.2"/>
+    <circle cx="88" cy="58" r="5.2"/>
+    <circle cx="72" cy="76" r="5.2"/>
+    <circle cx="88" cy="76" r="5.2"/>
+  </g>
+  <g fill="#46d982" filter="url(#glow)" opacity="0.66">
+    <circle cx="72" cy="58" r="2.8"/>
+    <circle cx="88" cy="58" r="2.8"/>
+    <circle cx="72" cy="76" r="2.8"/>
+    <circle cx="88" cy="76" r="2.8"/>
+  </g>
+  <path d="M93 52l19-8M96 59l20 1M93 66l18 10" stroke="#46d982" stroke-width="3" stroke-linecap="round" filter="url(#glow)" opacity="0.84"/>
+  <circle cx="114" cy="44" r="2.6" fill="#8affb9" filter="url(#glow)" opacity="0.84"/>
+  <circle cx="118" cy="60" r="2.2" fill="#8affb9" filter="url(#glow)" opacity="0.84"/>
+  <rect x="64" y="96" width="50" height="22" rx="5" fill="#111618" stroke="#3d454a" stroke-width="1.5"/>
+  <circle cx="89" cy="107" r="11" fill="#070809" stroke="#46d982" stroke-width="1.5"/>
+  <circle cx="89" cy="107" r="7" fill="#46d982" filter="url(#glow)"/>
+  <circle cx="89" cy="107" r="3" fill="#f9fbfc" opacity="0.48"/>
+</svg>

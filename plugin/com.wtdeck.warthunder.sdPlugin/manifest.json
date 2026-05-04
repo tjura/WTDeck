@@ -29,6 +29,153 @@
       "SupportedInMultiActions": true,
       "Tooltip": "War Thunder air brake state and toggle command",
       "UUID": "com.wtdeck.warthunder.airbrake.toggle"
+    },
+    {
+      "Icon": "images/actions/flaps-up",
+      "Name": "Flaps Up",
+      "PropertyInspectorPath": "property-inspector/index.html",
+      "States": [
+        {
+          "Image": "images/actions/flaps-up",
+          "TitleAlignment": "middle",
+          "FontSize": "12"
+        }
+      ],
+      "SupportedInMultiActions": true,
+      "Tooltip": "War Thunder flaps-up detent command with live flap state",
+      "UUID": "com.wtdeck.warthunder.flaps.up"
+    },
+    {
+      "Icon": "images/actions/flaps-down",
+      "Name": "Flaps Down",
+      "PropertyInspectorPath": "property-inspector/index.html",
+      "States": [
+        {
+          "Image": "images/actions/flaps-down",
+          "TitleAlignment": "middle",
+          "FontSize": "12"
+        }
+      ],
+      "SupportedInMultiActions": true,
+      "Tooltip": "War Thunder flaps-down detent command with live flap state",
+      "UUID": "com.wtdeck.warthunder.flaps.down"
+    },
+    {
+      "Icon": "images/actions/drogue-chute",
+      "Name": "Drogue Chute",
+      "PropertyInspectorPath": "property-inspector/index.html",
+      "States": [
+        {
+          "Image": "images/actions/drogue-chute",
+          "TitleAlignment": "middle",
+          "FontSize": "12"
+        }
+      ],
+      "SupportedInMultiActions": true,
+      "Tooltip": "War Thunder drogue chute deploy command",
+      "UUID": "com.wtdeck.warthunder.drogue-chute.deploy"
+    },
+    {
+      "Icon": "images/actions/flares",
+      "Name": "Fire Flares",
+      "PropertyInspectorPath": "property-inspector/index.html",
+      "States": [
+        {
+          "Image": "images/actions/flares",
+          "TitleAlignment": "middle",
+          "FontSize": "12"
+        }
+      ],
+      "SupportedInMultiActions": true,
+      "Tooltip": "War Thunder fire flares command",
+      "UUID": "com.wtdeck.warthunder.flares.fire"
+    },
+    {
+      "Icon": "images/actions/chaff",
+      "Name": "Fire Chaff",
+      "PropertyInspectorPath": "property-inspector/index.html",
+      "States": [
+        {
+          "Image": "images/actions/chaff",
+          "TitleAlignment": "middle",
+          "FontSize": "12"
+        }
+      ],
+      "SupportedInMultiActions": true,
+      "Tooltip": "War Thunder fire chaff command",
+      "UUID": "com.wtdeck.warthunder.chaff.fire"
+    },
+    {
+      "Controllers": [
+        "Information"
+      ],
+      "Icon": "images/actions/g-force",
+      "Name": "G Force",
+      "PropertyInspectorPath": "property-inspector/index.html",
+      "States": [
+        {
+          "Image": "images/actions/g-force",
+          "TitleAlignment": "middle",
+          "FontSize": "12"
+        }
+      ],
+      "SupportedInMultiActions": false,
+      "Tooltip": "War Thunder live G-load indicator",
+      "UserTitleEnabled": false,
+      "UUID": "com.wtdeck.warthunder.g-force.indicator"
+    },
+    {
+      "Controllers": [
+        "Information"
+      ],
+      "Icon": "images/actions/speed",
+      "Name": "Speed",
+      "PropertyInspectorPath": "property-inspector/index.html",
+      "States": [
+        {
+          "Image": "images/actions/speed",
+          "TitleAlignment": "middle",
+          "FontSize": "12"
+        }
+      ],
+      "SupportedInMultiActions": false,
+      "Tooltip": "War Thunder live IAS and TAS speed indicator",
+      "UserTitleEnabled": false,
+      "UUID": "com.wtdeck.warthunder.speed.indicator"
+    },
+    {
+      "Icon": "images/actions/fuel",
+      "Name": "Fuel",
+      "PropertyInspectorPath": "property-inspector/index.html",
+      "States": [
+        {
+          "Image": "images/actions/fuel",
+          "TitleAlignment": "middle",
+          "FontSize": "12"
+        }
+      ],
+      "SupportedInMultiActions": true,
+      "Tooltip": "War Thunder live fuel endurance and low-fuel warning indicator",
+      "UUID": "com.wtdeck.warthunder.fuel.indicator"
+    },
+    {
+      "Controllers": [
+        "Information"
+      ],
+      "Icon": "images/actions/altitude",
+      "Name": "Altitude",
+      "PropertyInspectorPath": "property-inspector/index.html",
+      "States": [
+        {
+          "Image": "images/actions/altitude",
+          "TitleAlignment": "middle",
+          "FontSize": "12"
+        }
+      ],
+      "SupportedInMultiActions": false,
+      "Tooltip": "War Thunder live radar altitude and ground collision warning indicator",
+      "UserTitleEnabled": false,
+      "UUID": "com.wtdeck.warthunder.altitude.indicator"
     }
   ],
   "Author": "WTDeck",

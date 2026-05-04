@@ -1,0 +1,47 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="144" height="144" viewBox="0 0 144 144">
+  <defs>
+    <linearGradient id="case" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0" stop-color="#252b2f"/>
+      <stop offset="1" stop-color="#060708"/>
+    </linearGradient>
+    <linearGradient id="plate" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0" stop-color="#141915"/>
+      <stop offset="1" stop-color="#070809"/>
+    </linearGradient>
+    <filter id="glow" x="-50%" y="-50%" width="200%" height="200%">
+      <feGaussianBlur stdDeviation="2.2" result="blur"/>
+      <feMerge><feMergeNode in="blur"/><feMergeNode in="SourceGraphic"/></feMerge>
+    </filter>
+  </defs>
+  <rect width="144" height="144" rx="8" fill="url(#case)"/>
+  <rect x="8" y="8" width="128" height="128" rx="6" fill="url(#plate)" stroke="#3a4349" stroke-width="1.5"/>
+  <circle cx="18" cy="18" r="4" fill="#111416" stroke="#4a535a" stroke-width="1"/>
+  <path d="M15.5 18h5" stroke="#59636b" stroke-width="1"/>
+  <circle cx="126" cy="18" r="4" fill="#111416" stroke="#4a535a" stroke-width="1"/>
+  <path d="M123.5 18h5" stroke="#59636b" stroke-width="1"/>
+  <circle cx="18" cy="126" r="4" fill="#111416" stroke="#4a535a" stroke-width="1"/>
+  <path d="M15.5 126h5" stroke="#59636b" stroke-width="1"/>
+  <circle cx="126" cy="126" r="4" fill="#111416" stroke="#4a535a" stroke-width="1"/>
+  <path d="M123.5 126h5" stroke="#59636b" stroke-width="1"/>
+  <text x="72" y="27" text-anchor="middle" fill="#d9dde0" font-size="12" font-family="Arial, sans-serif" font-weight="700">FLAPS</text>
+  <rect x="20" y="38" width="28" height="88" rx="5" fill="#050607" stroke="#46d982" stroke-width="1"/>
+  <circle cx="34" cy="50" r="5.5" fill="#8affb9" filter="url(#glow)"/>
+  <text x="34" y="60.5" text-anchor="middle" dominant-baseline="middle" fill="#46d982" font-size="16" font-family="Arial, sans-serif" font-weight="800">D</text>
+  <text x="34" y="77.5" text-anchor="middle" dominant-baseline="middle" fill="#46d982" font-size="16" font-family="Arial, sans-serif" font-weight="800">O</text>
+  <text x="34" y="94.5" text-anchor="middle" dominant-baseline="middle" fill="#46d982" font-size="16" font-family="Arial, sans-serif" font-weight="800">W</text>
+  <text x="34" y="111.5" text-anchor="middle" dominant-baseline="middle" fill="#46d982" font-size="16" font-family="Arial, sans-serif" font-weight="800">N</text>
+  <rect x="54" y="38" width="70" height="88" rx="5" fill="#080a0b" stroke="#323b42" stroke-width="1"/>
+  <rect x="62" y="48" width="35" height="66" rx="6" fill="#050607" stroke="#3d454a" stroke-width="1.5"/>
+  <path d="M73 56v48" stroke="#161b1e" stroke-width="8" stroke-linecap="round"/>
+  <path d="M73 56v48" stroke="#46d982" stroke-width="5" stroke-linecap="round" opacity="0.52"/>
+  <path d="M66 56h15M68 68h11M66 80h15M68 92h11M66 104h15" stroke="#59636b" stroke-width="1.3" stroke-linecap="round"/>
+  <text x="85" y="59" text-anchor="start" fill="#8f9aa1" font-size="7" font-family="Arial, sans-serif" font-weight="700">0</text>
+  <text x="84" y="83" text-anchor="start" fill="#8f9aa1" font-size="7" font-family="Arial, sans-serif" font-weight="700">50</text>
+  <text x="82" y="107" text-anchor="start" fill="#8f9aa1" font-size="7" font-family="Arial, sans-serif" font-weight="700">100</text>
+  <rect x="62" y="99" width="22" height="10" rx="5" fill="#46d982" filter="url(#glow)"/>
+  <path d="M66 104h14" stroke="#f9fbfc" stroke-width="2.2" stroke-linecap="round" opacity="0.48"/>
+  <rect x="96" y="77" width="25" height="18" rx="4" fill="#0c1113" stroke="#344047" stroke-width="1"/>
+  <text x="108.5" y="90" text-anchor="middle" fill="#46d982" font-size="11" font-family="Arial, sans-serif" font-weight="800">100%</text>
+  <path d="M111 114l-7-10h14z" fill="#46d982" filter="url(#glow)"/>
+  <path d="M111 91v12" stroke="#46d982" stroke-width="3.2" stroke-linecap="round" opacity="0.52"/>
+</svg>

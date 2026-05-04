@@ -29,6 +29,7 @@
       },
       "command": {
         "intent": "landing-gear-toggle",
+        "warThunderControlId": "ID_GEAR",
         "defaultHotkeyLabel": "G",
         "adapter": "companion-http",
         "notes": "Native Stream Dock hotkey settings do not dispatch for custom code actions; use the local WTDeck companion sender."
@@ -61,9 +62,414 @@
       },
       "command": {
         "intent": "airbrake-toggle",
+        "warThunderControlId": "ID_AIR_BRAKE",
         "defaultHotkeyLabel": "H",
         "adapter": "companion-http",
         "notes": "Native Stream Dock hotkey settings do not dispatch for custom code actions; use the local WTDeck companion sender."
+      }
+    },
+    "com.wtdeck.warthunder.flaps.up": {
+      "id": "flapsUp",
+      "shortLabel": "FLAPS",
+      "panelLabel": "FLAPS",
+      "kind": "step-command",
+      "telemetry": {
+        "normalizedField": "flapsPercent",
+        "primaryEndpoint": "state",
+        "primaryRawField": "flaps, %",
+        "fallbackEndpoint": "indicators",
+        "fallbackRawFields": [
+          "flaps_indicator",
+          "flaps"
+        ],
+        "notes": "War Thunder exposes separate directional flap controls. Each press moves one flap detent up; telemetry confirms the resulting flap percentage."
+      },
+      "thresholds": {
+        "offMax": 5,
+        "onMin": 95
+      },
+      "states": {
+        "off": "UP",
+        "on": "DOWN",
+        "moving": "MID",
+        "unknown": "NO FLIGHT"
+      },
+      "command": {
+        "intent": "flaps-up",
+        "warThunderControlId": "ID_FLAPS_UP",
+        "defaultHotkeyLabel": "PageUp",
+        "adapter": "companion-http",
+        "notes": "Directional War Thunder flap command. WTDeck sends the configured Flaps Up binding through the local companion and uses telemetry for visual confirmation."
+      }
+    },
+    "com.wtdeck.warthunder.flaps.down": {
+      "id": "flapsDown",
+      "shortLabel": "FLAPS",
+      "panelLabel": "FLAPS",
+      "kind": "step-command",
+      "telemetry": {
+        "normalizedField": "flapsPercent",
+        "primaryEndpoint": "state",
+        "primaryRawField": "flaps, %",
+        "fallbackEndpoint": "indicators",
+        "fallbackRawFields": [
+          "flaps_indicator",
+          "flaps"
+        ],
+        "notes": "War Thunder exposes separate directional flap controls. Each press moves one flap detent down; telemetry confirms the resulting flap percentage."
+      },
+      "thresholds": {
+        "offMax": 5,
+        "onMin": 95
+      },
+      "states": {
+        "off": "UP",
+        "on": "DOWN",
+        "moving": "MID",
+        "unknown": "NO FLIGHT"
+      },
+      "command": {
+        "intent": "flaps-down",
+        "warThunderControlId": "ID_FLAPS_DOWN",
+        "defaultHotkeyLabel": "PageDown",
+        "adapter": "companion-http",
+        "notes": "Directional War Thunder flap command. WTDeck sends the configured Flaps Down binding through the local companion and uses telemetry for visual confirmation."
+      }
+    },
+    "com.wtdeck.warthunder.drogue-chute.deploy": {
+      "id": "drogueChute",
+      "shortLabel": "CHUTE",
+      "panelLabel": "DROGUE",
+      "kind": "momentary",
+      "telemetry": {
+        "mode": "drogue-readiness",
+        "primaryEndpoint": "state",
+        "primaryRawField": "IAS, km/h",
+        "fallbackEndpoint": "indicators",
+        "fallbackRawFields": [
+          "radio_altitude"
+        ],
+        "normalizedFields": {
+          "iasKmh": "iasKmh",
+          "radarAltitudeMeters": "radarAltitudeMeters"
+        },
+        "notes": "War Thunder localhost telemetry does not expose structured drogue chute deployed or released state. WTDeck only allows the command when IAS and radar altitude match a conservative landing-use envelope."
+      },
+      "thresholds": {
+        "maxReadyIasKmh": 350,
+        "maxReadyRadarAltitudeMeters": 10
+      },
+      "automation": {
+        "landingAssist": {
+          "settingKey": "autoLandingAssistEnabled",
+          "brakeBindingSettingKey": "autoBrakeHotkeyLabel",
+          "brakeIntent": "wheel-brake",
+          "brakeWarThunderControlId": "brake_left_rangeMax",
+          "brakeWarThunderControlIds": [
+            "brake_left_rangeMax",
+            "brake_right_rangeMax",
+            "ID_WHEEL_BRAKE"
+          ],
+          "defaultBrakeHotkeyLabel": "B",
+          "thresholds": {
+            "gearDownMinPercent": 95,
+            "touchdownRadarAltitudeMeters": 3.5,
+            "touchdownMaxIasKmh": 380,
+            "noRadarTouchdownMaxSpeedKmh": 260,
+            "noRadarSpeedOnlyTouchdownMaxSpeedKmh": 140,
+            "noRadarIdleThrottleMaxPercent": 5,
+            "stableTouchdownMs": 500,
+            "stableVerticalSpeedAbsMps": 1,
+            "airborneReleaseRadarAltitudeMeters": 5,
+            "stoppedSpeedKmh": 1,
+            "stoppedHoldMs": 5000
+          },
+          "notes": "Optional user-armed landing assist. WTDeck holds wheel brake after touchdown, deploys Drogue once its readiness gate is satisfied, then releases brake after the aircraft stops."
+        }
+      },
+      "states": {
+        "on": "READY",
+        "fast": "FAST",
+        "air": "AIR",
+        "armed": "ARM",
+        "brake": "BRK",
+        "drogue": "DRG",
+        "stopped": "STOP",
+        "unknown": "NO FLIGHT"
+      },
+      "command": {
+        "intent": "drogue-chute-deploy",
+        "warThunderControlId": "ID_CHUTE",
+        "defaultHotkeyLabel": "Shift+G",
+        "adapter": "companion-http",
+        "requiresReadyState": true,
+        "notes": "Default War Thunder drag/drogue chute binding is Shift+G. The button dispatches only when WTDeck's latest speed and radar-altitude readiness model is READY."
+      }
+    },
+    "com.wtdeck.warthunder.flares.fire": {
+      "id": "flares",
+      "shortLabel": "FLARES",
+      "panelLabel": "FLARES",
+      "kind": "momentary-command",
+      "telemetry": {
+        "mode": "flight-valid",
+        "notes": "War Thunder localhost telemetry does not expose structured flare count, selected countermeasure mode, or release confirmation in /state or /indicators."
+      },
+      "states": {
+        "on": "READY",
+        "unknown": "NO FLIGHT"
+      },
+      "command": {
+        "intent": "fire-flares",
+        "warThunderControlId": "ID_COUNTERMEASURES_FLARES",
+        "defaultHotkeyLabel": "",
+        "adapter": "companion-http",
+        "notes": "Bind War Thunder's separate Fire flares control, then set the same binding label in the WTDeck property inspector."
+      }
+    },
+    "com.wtdeck.warthunder.chaff.fire": {
+      "id": "chaff",
+      "shortLabel": "CHAFF",
+      "panelLabel": "CHAFF",
+      "kind": "momentary-command",
+      "telemetry": {
+        "mode": "flight-valid",
+        "notes": "War Thunder localhost telemetry does not expose structured chaff count, selected countermeasure mode, or release confirmation in /state or /indicators."
+      },
+      "states": {
+        "on": "READY",
+        "unknown": "NO FLIGHT"
+      },
+      "command": {
+        "intent": "fire-chaff",
+        "warThunderControlId": "ID_COUNTERMEASURES_CHAFF",
+        "defaultHotkeyLabel": "",
+        "adapter": "companion-http",
+        "notes": "Bind War Thunder's separate Fire chaff control, then set the same binding label in the WTDeck property inspector."
+      }
+    },
+    "com.wtdeck.warthunder.g-force.indicator": {
+      "id": "gForce",
+      "shortLabel": "G",
+      "panelLabel": "G",
+      "kind": "indicator",
+      "telemetry": {
+        "normalizedField": "gForce",
+        "primaryEndpoint": "state",
+        "primaryRawField": "Ny",
+        "fallbackEndpoint": "indicators",
+        "fallbackRawFields": [
+          "g_meter"
+        ]
+      },
+      "thresholds": {
+        "warningMin": 9,
+        "dangerMin": 10
+      },
+      "states": {
+        "safe": "OK",
+        "warning": "WARN",
+        "danger": "DANGER",
+        "unknown": "NO FLIGHT"
+      },
+      "alerts": {
+        "gWarning": {
+          "enabled": true,
+          "pattern": "gWarning",
+          "cooldownMs": 3000,
+          "frequency": 420,
+          "durationMs": 90,
+          "volume": 0.12
+        },
+        "gDanger": {
+          "enabled": true,
+          "pattern": "gDanger",
+          "cooldownMs": 2000,
+          "minCooldownMs": 1000,
+          "cooldownDropPerG": 500,
+          "highFrequency": 880,
+          "lowFrequency": 660,
+          "toneMs": 150,
+          "lowToneMs": 180,
+          "gapMs": 55,
+          "volume": 0.28
+        }
+      },
+      "command": {
+        "intent": "none",
+        "adapter": "none",
+        "notes": "Read-only Stream Dock Information controller; no key command is dispatched."
+      }
+    },
+    "com.wtdeck.warthunder.speed.indicator": {
+      "id": "speed",
+      "shortLabel": "SPD",
+      "panelLabel": "AIRSPEED",
+      "kind": "readout",
+      "telemetry": {
+        "normalizedFields": {
+          "iasKmh": "IAS, km/h",
+          "tasKmh": "TAS, km/h"
+        },
+        "primaryEndpoint": "state",
+        "primaryRawFields": [
+          "IAS, km/h",
+          "TAS, km/h"
+        ]
+      },
+      "states": {
+        "safe": "LIVE",
+        "unknown": "NO FLIGHT"
+      },
+      "command": {
+        "intent": "none",
+        "adapter": "none",
+        "notes": "Read-only Stream Dock Information controller; no key command is dispatched."
+      }
+    },
+    "com.wtdeck.warthunder.fuel.indicator": {
+      "id": "fuel",
+      "shortLabel": "FUEL",
+      "panelLabel": "FUEL",
+      "kind": "readout",
+      "telemetry": {
+        "mode": "fuel-endurance",
+        "primaryEndpoint": "indicators",
+        "primaryRawFields": [
+          "fuel",
+          "fuel_consume"
+        ],
+        "fallbackEndpoint": "state",
+        "fallbackRawFields": [
+          "Mfuel, kg",
+          "Mfuel0, kg"
+        ],
+        "normalizedFields": {
+          "fuelKg": "fuelKg",
+          "initialFuelKg": "initialFuelKg",
+          "fuelPercent": "fuelPercent",
+          "fuelBurnKgPerSec": "fuelBurnKgPerSec",
+          "fuelEtaSeconds": "fuelEtaSeconds"
+        },
+        "notes": "War Thunder exposes fuel mass and cockpit fuel consumption, but WTDeck derives endurance from live fuel mass deltas so afterburner and throttle changes are reflected by current usage."
+      },
+      "thresholds": {
+        "warningSeconds": 180,
+        "clearSeconds": 210,
+        "warningPersistenceMs": 1000,
+        "clearPersistenceMs": 1000,
+        "minimumFuelKg": 0.5
+      },
+      "states": {
+        "safe": "OK",
+        "calibrating": "CAL",
+        "warning": "LOW",
+        "acknowledged": "ACK",
+        "unknown": "NO FLIGHT"
+      },
+      "alerts": {
+        "lowFuelWarning": {
+          "enabled": true,
+          "pattern": "lowFuelVoice",
+          "cooldownMs": 10000,
+          "src": "../sounds/alerts/low-fuel-male.wav",
+          "text": "LOW FUEL",
+          "volume": 0.9
+        }
+      },
+      "command": {
+        "intent": "none",
+        "adapter": "none",
+        "notes": "Read-only Stream Dock Information controller. Pressing the button acknowledges the current low-fuel audio warning instead of sending a game command."
+      }
+    },
+    "com.wtdeck.warthunder.altitude.indicator": {
+      "id": "altitude",
+      "shortLabel": "ALT",
+      "panelLabel": "ALT",
+      "kind": "indicator",
+      "telemetry": {
+        "mode": "altitude",
+        "primaryEndpoint": "state",
+        "primaryRawField": "H, m",
+        "fallbackEndpoint": "indicators",
+        "fallbackRawFields": [
+          "radio_altitude"
+        ],
+        "normalizedFields": {
+          "altitudeMeters": "altitudeMeters",
+          "radarAltitudeMeters": "radarAltitudeMeters",
+          "verticalSpeedMps": "verticalSpeedMps",
+          "groundClosureRateMps": "groundClosureRateMps",
+          "iasKmh": "iasKmh",
+          "tasKmh": "tasKmh",
+          "pitchDeg": "pitchDeg",
+          "rollDeg": "rollDeg",
+          "gearPercent": "gearPercent"
+        }
+      },
+      "thresholds": {
+        "warningRiskRatio": 0.65,
+        "dangerRiskRatio": 1,
+        "pullUpRiskRatio": 1.25,
+        "warningTimeToImpactSec": 8,
+        "dangerTimeToImpactSec": 2.4,
+        "pullUpTimeToImpactSec": 1.6,
+        "minimumClosureRateMps": 1.2,
+        "minimumDescentAngleDeg": 2.5,
+        "reactionTimeSec": 1.1,
+        "recoveryG": 3.5,
+        "warningPersistenceMs": 300,
+        "safeClearMs": 1200,
+        "deescalateMs": 600
+      },
+      "states": {
+        "safe": "OK",
+        "warning": "TERRAIN",
+        "danger": "TERRAIN",
+        "pullUp": "PULL UP",
+        "unknown": "NO FLIGHT"
+      },
+      "alerts": {
+        "groundCollisionWarning": {
+          "enabled": true,
+          "pattern": "terrainWarning",
+          "cooldownMs": 2200,
+          "lowFrequency": 420,
+          "highFrequency": 620,
+          "toneMs": 170,
+          "gapMs": 95,
+          "volume": 0.22
+        },
+        "groundCollisionDanger": {
+          "enabled": true,
+          "pattern": "terrainDanger",
+          "cooldownMs": 1400,
+          "minCooldownMs": 650,
+          "cooldownDropPerRisk": 450,
+          "lowFrequency": 520,
+          "highFrequency": 880,
+          "toneMs": 140,
+          "gapMs": 45,
+          "volume": 0.3
+        },
+        "groundCollisionPullUp": {
+          "enabled": true,
+          "pattern": "pullUp",
+          "cooldownMs": 900,
+          "minCooldownMs": 450,
+          "cooldownDropPerRisk": 500,
+          "lowFrequency": 660,
+          "highFrequency": 1040,
+          "toneMs": 120,
+          "gapMs": 35,
+          "volume": 0.34
+        }
+      },
+      "command": {
+        "intent": "none",
+        "adapter": "none",
+        "notes": "Read-only Stream Dock Information controller; no key command is dispatched."
       }
     }
   }

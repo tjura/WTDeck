@@ -77,6 +77,7 @@ Good examples:
 - `LDG GEAR`
 - `FLAPS`
 - `AIRBRK`
+- `DROGUE`
 - `FUEL`
 - `CANOPY`
 
@@ -122,6 +123,7 @@ Recommended state abbreviations:
 | `TRANSIT` | `TRNST` |
 | `NO FLIGHT` | `NOFLT` |
 | `OFFLINE` | `OFF` |
+| `READY` | `RDY` |
 | `DEPLOYED` | `DPLYD` |
 | `RETRACTED` | `RTRCT` |
 
@@ -137,6 +139,7 @@ It should be larger than the state rail and should visually explain the command:
 - Landing gear: vertical switch or lever
 - Flaps: indexed lever, segmented detents, or multi-position handle
 - Airbrake: guarded push/pull switch or lever
+- Drogue chute: guarded pull handle or release lever
 - Countermeasures: guarded momentary button
 - Canopy: latch or guarded switch
 
@@ -150,6 +153,10 @@ Rules:
 
 For continuous percentages, map the value to position. For discrete states, use
 fixed positions.
+
+For aircraft systems with variable detents, such as flaps, show the real
+normalized position on a compact 0-100 scale. The directional command can be a
+small arrow or handle cue; the live scale should remain the source of truth.
 
 ## Color System
 
@@ -267,7 +274,7 @@ Use:
 
 ### Momentary Control
 
-Examples: countermeasures, jettison, starter.
+Examples: drogue chute, countermeasures, jettison, starter.
 
 Use:
 
