@@ -372,6 +372,8 @@
           pullUpTimeToImpactSec: 1.6,
           minimumClosureRateMps: 1.2,
           minimumDescentAngleDeg: 2.5,
+          radarClosureAssistBelowMeters: 250,
+          radarClosureAssistMinSinkRateMps: 5,
           reactionTimeSec: 1.1,
           recoveryG: 3.5,
           warningPersistenceMs: 300,

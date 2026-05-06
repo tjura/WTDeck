@@ -527,7 +527,13 @@
     const thresholds = actionDefinition.thresholds || {};
     const radarAltitudeMeters = numberOrNull(telemetry.radarAltitudeMeters);
     const verticalSpeedMps = numberOrNull(telemetry.verticalSpeedMps);
-    const groundClosureRateMps = Math.max(0, numberOrDefault(telemetry.groundClosureRateMps, 0));
+    const groundClosure = collisionClosureRate(
+      radarAltitudeMeters,
+      verticalSpeedMps,
+      telemetry,
+      thresholds
+    );
+    const groundClosureRateMps = groundClosure.groundClosureRateMps;
     const derivedSinkRateMps = numberOrNull(telemetry.derivedSinkRateMps);
     const iasKmh = numberOrNull(telemetry.iasKmh);
     const tasKmh = numberOrNull(telemetry.tasKmh);
@@ -557,7 +563,7 @@
     const minimumClosureRateMps = thresholdNumber(thresholds, "minimumClosureRateMps", 1.2);
     const minimumDescentAngleDeg = thresholdNumber(thresholds, "minimumDescentAngleDeg", 2.5);
     let rawState = "safe";
-    let suppressedReason = "";
+    let suppressedReason = groundClosure.suppressedReason;
 
     if (radarAltitudeMeters === null) {
       groundCollisionMemoryByAction.delete(actionDefinition.id);
@@ -689,6 +695,52 @@
 
   function isParkedOnGround(radarAltitudeMeters, iasKmh) {
     return radarAltitudeMeters < 3 && iasKmh !== null && iasKmh < 80;
+  }
+
+  function collisionClosureRate(radarAltitudeMeters, verticalSpeedMps, telemetry, thresholds) {
+    const radarClosureRateMps = Math.max(0, numberOrDefault(telemetry.groundClosureRateMps, 0));
+    const telemetryVerticalSinkRateMps = numberOrNull(telemetry.verticalSinkRateMps);
+    let verticalSinkRateMps = telemetryVerticalSinkRateMps === null
+      ? null
+      : Math.max(0, telemetryVerticalSinkRateMps);
+    if (verticalSinkRateMps === null && verticalSpeedMps !== null) {
+      verticalSinkRateMps = Math.max(0, -verticalSpeedMps);
+    }
+
+    if (radarAltitudeMeters === null || verticalSinkRateMps === null) {
+      return {
+        groundClosureRateMps: radarClosureRateMps,
+        suppressedReason: ""
+      };
+    }
+
+    const radarClosureAssistBelowMeters = thresholdNumber(
+      thresholds,
+      "radarClosureAssistBelowMeters",
+      250
+    );
+    const radarClosureAssistMinSinkRateMps = thresholdNumber(
+      thresholds,
+      "radarClosureAssistMinSinkRateMps",
+      5
+    );
+    const radarClosureExcessMps = radarClosureRateMps - verticalSinkRateMps;
+
+    if (
+      radarAltitudeMeters > radarClosureAssistBelowMeters &&
+      verticalSinkRateMps < radarClosureAssistMinSinkRateMps &&
+      radarClosureExcessMps > 0
+    ) {
+      return {
+        groundClosureRateMps: verticalSinkRateMps,
+        suppressedReason: "terrain-slope"
+      };
+    }
+
+    return {
+      groundClosureRateMps: Math.max(radarClosureRateMps, verticalSinkRateMps),
+      suppressedReason: ""
+    };
   }
 
   function isNormalTakeoff(radarAltitudeMeters, verticalSpeedMps, iasKmh) {
