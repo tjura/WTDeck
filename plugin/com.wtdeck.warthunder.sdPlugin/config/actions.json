@@ -424,6 +424,7 @@
         "minimumDescentAngleDeg": 2.5,
         "radarClosureAssistBelowMeters": 250,
         "radarClosureAssistMinSinkRateMps": 5,
+        "radarClosureAssistMaxSuppressedRateMps": 25,
         "reactionTimeSec": 1.1,
         "recoveryG": 3.5,
         "warningPersistenceMs": 300,

@@ -724,12 +724,24 @@
       "radarClosureAssistMinSinkRateMps",
       5
     );
+    const radarClosureAssistMaxSuppressedRateMps = thresholdNumber(
+      thresholds,
+      "radarClosureAssistMaxSuppressedRateMps",
+      25
+    );
+    const warningTimeToImpactSec = thresholdNumber(thresholds, "warningTimeToImpactSec", 8);
     const radarClosureExcessMps = radarClosureRateMps - verticalSinkRateMps;
+    const radarClosureTimeToImpactSec = radarClosureRateMps <= 0.1
+      ? Infinity
+      : radarAltitudeMeters / radarClosureRateMps;
+    const seriousRadarClosure = radarClosureRateMps >= radarClosureAssistMaxSuppressedRateMps ||
+      radarClosureTimeToImpactSec <= warningTimeToImpactSec;
 
     if (
       radarAltitudeMeters > radarClosureAssistBelowMeters &&
       verticalSinkRateMps < radarClosureAssistMinSinkRateMps &&
-      radarClosureExcessMps > 0
+      radarClosureExcessMps > 0 &&
+      !seriousRadarClosure
     ) {
       return {
         groundClosureRateMps: verticalSinkRateMps,
